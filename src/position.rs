@@ -7,7 +7,6 @@ use super::castles::CastlePermissions;
 use super::square::Square;
 use super::pieces::{ColoredPiece};
 use super::errors;
-
 use super::pieces::PieceRepr;
 
 #[derive(Copy, Clone)]
@@ -54,6 +53,21 @@ impl Position {
             ColoredPiece::BKnight => self.piece_masks[ColoredPiece::BKnight as usize],
             ColoredPiece::BQueen => self.piece_masks[ColoredPiece::BQueen as usize],
             ColoredPiece::None => self.empty_mask(),
+        }
+    }
+}
+
+#[cfg(not(debug_assertions))]
+impl Position {
+    fn print_bitboard(&self, bb: u64) {}
+}
+
+#[cfg(debug_assertions)]
+impl Position {
+    pub fn print_bitboard(bb: u64) {
+        let binary_board = format!("{:0064b}", bb);
+        for i in 0..8 {
+            println!("{}", &binary_board[i*8..(i + 1)*8]);
         }
     }
 }
@@ -289,5 +303,11 @@ mod tests {
             let output_fen: String = position.into();
             assert_eq!(output_fen, fen.clone(), "Output FEN did not match input FEN\nExpected: '{}'\nFound:    '{}'", fen, output_fen);
         }
+    }
+
+    #[test]
+    fn bitboard_works() {
+        let bb: u64 = 0x18243c24186681;
+        Position::print_bitboard(bb);
     }
 }
