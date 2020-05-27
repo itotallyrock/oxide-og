@@ -25,26 +25,32 @@ impl Square {
         FILE_CHARS[self.x() as usize]
     }
     pub fn mask(&self) -> u64 {
-        1u64 << self.offset
+        1u64 << self.offset as u64
     }
 }
 
 impl ToString for Square {
     fn to_string(&self) -> String {
-        String::from("1")
+        let mut string = String::with_capacity(2);
+        string.push(FILE_CHARS[self.x() as usize]);
+        string.push(RANK_CHARS[self.y() as usize]);
+
+        string
     }
 }
 
 impl TryFrom<String> for Square {
     type Error = errors::SquareParseError;
     fn try_from(file_rank: String) -> Result<Self, Self::Error> {
-        let mut file_rank_chars = file_rank.chars();
-        if file_rank_chars.clone().count() != 2 {
-            let err = errors::SquareParseError::SquareLengthError(file_rank);
-            return Err(err);
+        let file_string_copy = file_rank.clone();
+        let mut file_rank_chars = file_string_copy.chars();
+        let err = errors::SquareParseError::SquareLengthError(file_rank.clone());
+        let file = file_rank_chars.next().ok_or(err.clone())?;
+        let rank = file_rank_chars.next().ok_or(err.clone())?;
+        // If we took 2 chars but there is more left error
+        if file_rank_chars.next().is_some() {
+            return Err(err.clone());
         }
-        let file = file_rank_chars.next().unwrap();
-        let rank = file_rank_chars.next().unwrap();
         let file_index = FILE_CHARS.iter().position(|&c| c == file);
         let rank_index = RANK_CHARS.iter().position(|&c| c == rank);
 
@@ -69,7 +75,7 @@ impl TryFrom<u8> for Square {
         if offset > 63 {
             Err(format!("Offset must be between 0 and 63, received '{}'", offset))
         } else {
-            Ok(Square { offset: offset })
+            Ok(Square { offset })
         }
     }
 }
