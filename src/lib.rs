@@ -7,3 +7,6 @@ pub mod pieces;
 pub mod square;
 pub mod castles;
 pub mod position;
+pub mod zobrist;
+pub mod chess_move;
+pub mod board;
