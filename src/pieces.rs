@@ -124,7 +124,7 @@ impl From<char> for Piece {
 pub trait PieceRepr {
     /// Get standard 256 ascii character
     fn to_ascii(&self) -> char;
-    /// Get the full unicode representation (fallsback to ascii)
+    /// Get the full unicode representation (falls back to ascii)
     fn to_unicode(&self) -> char {
         self.to_ascii()
     }
