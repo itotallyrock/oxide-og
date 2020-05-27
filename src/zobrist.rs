@@ -35,16 +35,16 @@ impl ZobristHashable for position::Position {
             hash ^= ZOBRIST_KEYS[768];
         }
 
-        if self.castle_rights.contains(CastlePermissions::BLACK_KING_CASTLE) {
+        if self.castle_rights.contains(CastlePermissions::BLACK_KING) {
             hash ^= ZOBRIST_KEYS[769];
         }
-        if self.castle_rights.contains(CastlePermissions::BLACK_QUEEN_CASTLE) {
+        if self.castle_rights.contains(CastlePermissions::BLACK_QUEEN) {
             hash ^= ZOBRIST_KEYS[770];
         }
-        if self.castle_rights.contains(CastlePermissions::WHITE_KING_CASTLE) {
+        if self.castle_rights.contains(CastlePermissions::WHITE_KING) {
             hash ^= ZOBRIST_KEYS[771];
         }
-        if self.castle_rights.contains(CastlePermissions::WHITE_QUEEN_CASTLE) {
+        if self.castle_rights.contains(CastlePermissions::WHITE_QUEEN) {
             hash ^= ZOBRIST_KEYS[772];
         }
 
