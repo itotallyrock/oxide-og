@@ -8,6 +8,15 @@ pub enum Side {
     Black,
 }
 
+impl Side {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Side::White => Side::Black,
+            _ => Side::White,
+        }
+    }
+}
+
 
 impl TryFrom<String> for Side {
     type Error = errors::InvalidSideError;
@@ -20,3 +29,13 @@ impl TryFrom<String> for Side {
         }
     }
 }
+
+impl From<Side> for char {
+    fn from(side: Side) -> Self {
+        match side {
+            Side::White => 'w',
+            Side::Black => 'b',
+        }
+    }
+}
+
