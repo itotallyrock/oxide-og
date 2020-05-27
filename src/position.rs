@@ -1,21 +1,24 @@
 
-use std::convert::TryFrom;
+use std::char;
+use std::convert::{TryFrom};
 
-use crate::side::Side;
-use crate::castles::CastlePermissions;
-use crate::square::Square;
-use crate::pieces::ColoredPiece;
-use crate::errors;
+use super::side::Side;
+use super::castles::CastlePermissions;
+use super::square::Square;
+use super::pieces::{ColoredPiece};
+use super::errors;
+
+use super::pieces::PieceRepr;
 
 #[derive(Copy, Clone)]
 pub struct Position {
     pub side: Side,
-    pub fullmove_count: Option<u16>,
+    pub fullmove_count: u16,
     pub halfmove_clock: Option<u8>,
     pub castle_rights: CastlePermissions,
     pub enpassant_square: Option<Square>,
     pub squares: [ColoredPiece; 64],
-    piece_masks: [u64; 12],
+    pub(crate) piece_masks: [u64; 12],
 }
 
 impl Position {
@@ -59,7 +62,7 @@ impl Default for Position {
     fn default() -> Self {
         Position {
             side: Side::White,
-            fullmove_count: Some(0),
+            fullmove_count: 1,
             halfmove_clock: Some(0),
             castle_rights: CastlePermissions::NONE,
             enpassant_square: None,
@@ -73,7 +76,7 @@ impl TryFrom<String> for Position {
     type Error = errors::FenParseError;
     fn try_from(fen: String) -> Result<Self, Self::Error> {
         let side: Side;
-        let fullmove_count: Option<u16>;
+        let fullmove_count: u16;
         let halfmove_clock: Option<u8>;
         let castle_rights: CastlePermissions;
         let enpassant_square: Option<Square>;
@@ -97,7 +100,7 @@ impl TryFrom<String> for Position {
         halfmove_clock = String::from(halfmove_chunk).parse::<u8>().ok();
 
         let fullmove_chunk = fen_chunks.next().ok_or(errors::InvalidFenString(String::from("expected full move count or -")))?;
-        fullmove_count = String::from(fullmove_chunk).parse::<u16>().ok();
+        fullmove_count = String::from(fullmove_chunk).parse::<u16>().unwrap_or(1);
 
         let mut total_offset: u8 = 56;
         for board_char in board_chunk.chars() {
@@ -115,14 +118,99 @@ impl TryFrom<String> for Position {
         }
 
         Ok(Position {
-            side: side,
-            fullmove_count: fullmove_count,
-            halfmove_clock: halfmove_clock,
-            castle_rights: castle_rights,
-            enpassant_square: enpassant_square,
-            piece_masks: piece_masks,
-            squares: squares,
+            side,
+            fullmove_count,
+            halfmove_clock,
+            castle_rights,
+            enpassant_square,
+            piece_masks,
+            squares,
         })
+    }
+}
+
+impl From<Position> for String {
+    fn from(pos: Position) -> Self {
+        // 84 is longest possible FEN
+        // 64 for each possible square
+        // 6 for the slashes between
+        // 4 for longest castle KQkq
+        // 2 for longest en passant square
+        // 2 for 2 digit half move clock
+        // 2 for 2 digit full move
+        // 4 for spaces between each
+        // 64 + 6 + 4 + 2 + 2 + 2 + 4
+        let mut builder = String::with_capacity(84);
+
+        let mut squares_mapped: [[ColoredPiece; 8]; 8] = [[ColoredPiece::None; 8]; 8];
+
+        for offset in 0..64usize {
+            let square = Square::try_from(offset as u8).unwrap();
+            squares_mapped[square.y() as usize][square.x() as usize] = pos.squares[offset];
+        }
+
+        for y in (0..8usize).rev() {
+            let mut current_blanks = 0u32;
+            for x in 0..8usize {
+                let piece = squares_mapped[y][x];
+                if piece == ColoredPiece::None {
+                    if x == 7 {
+                        builder.push(char::from_digit(current_blanks + 1, 10).unwrap());
+                        break;
+                    }
+                    current_blanks += 1;
+                    continue;
+                } else {
+                    if current_blanks > 0 {
+                        builder.push(char::from_digit(current_blanks, 10).unwrap());
+                        current_blanks = 0;
+                    }
+                    builder.push(piece.to_ascii());
+                }
+            }
+            if y > 0 {
+                builder.push('/');
+            }
+        }
+        // Whitespace between board and side
+        builder.push(' ');
+
+        // Side to move
+        builder.push(pos.side.into());
+
+        // Whitespace between side and castle rights
+        builder.push(' ');
+
+        // Castle rights
+        builder.push_str(pos.castle_rights.to_string().as_str());
+
+        // Whitespace between castle and en passant square
+        builder.push(' ');
+
+        // En passant square
+        if pos.enpassant_square.is_some() {
+            builder.push_str(pos.enpassant_square.unwrap().to_string().as_str());
+        } else {
+            builder.push('-');
+        }
+
+        // Whitespace between en passant square and half move clock
+        builder.push(' ');
+
+        // Half move clock
+        if pos.halfmove_clock.is_some() {
+            builder.push_str(pos.halfmove_clock.unwrap().to_string().as_str());
+        } else {
+            builder.push('0');
+        }
+
+        // Whitespace between half move clock and full move counter
+        builder.push(' ');
+
+        // Full move counter
+        builder.push_str(pos.fullmove_count.to_string().as_str());
+
+        builder
     }
 }
 
@@ -141,8 +229,7 @@ mod tests {
     fn default_fen_works() {
         let default_fen = String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         let position_result: Result<Position, errors::FenParseError> = Position::try_from(default_fen);
-        // TODO: Log error from result
-        assert!(position_result.is_ok(), "Failed to parse default FEN");
+        assert!(position_result.is_ok(), "Failed to parse default FEN {:?}", position_result.err().unwrap());
 
         let position = position_result.unwrap();
         assert_eq!(position.side, Side::White, "Default side was not white");
@@ -181,5 +268,26 @@ mod tests {
         assert_eq!(position.squares[15], ColoredPiece::WPawn, "White pawn expected on a2");
         assert_eq!(position.squares[4], ColoredPiece::WKing, "White king expected on e1");
         assert_eq!(position.squares[60], ColoredPiece::BKing, "Black king expected on e8");
+    }
+
+    #[test]
+    fn fen_string_is_symmetric() {
+        let fens = [
+            "8/8/8/8/8/8/8/8 w KQkq - 0 1".to_string(),
+            "8/8/8/8/8/8/8/8 b KQkq - 0 1".to_string(),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            "rnbqkbnr/pppQ2pp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1".to_string(),
+            "rnbqkbnr/pppppppp/8/8/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            "8/8/8/8/8/8/p1p1p1p1/1p1p1p1p w - - 0 1".to_string(),
+            "p6p/6p1/1p1p4/8/4p3/2p5/p4p1p/8 w - - 0 1".to_string(),
+        ];
+        for fen in &fens {
+            let parse_result = Position::try_from(fen.clone());
+            assert!(parse_result.is_ok(), "Failed to parse FEN '{}'", fen);
+            let position = parse_result.unwrap();
+            let output_fen: String = position.into();
+            assert_eq!(output_fen, fen.clone(), "Output FEN did not match input FEN\nExpected: '{}'\nFound:    '{}'", fen, output_fen);
+        }
     }
 }
