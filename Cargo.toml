@@ -11,3 +11,6 @@ license = "MIT"
 [dependencies]
 bitflags = "1.2.1"
 err-derive = "0.2"
+itertools = "0.9"
+rand = "0.7"
+lazy_static = "1.4"
