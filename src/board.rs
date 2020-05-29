@@ -41,11 +41,11 @@ impl MutablePosition for Position {
     }
 }
 
-trait CopyMakeBoard {
+pub trait CopyMakeBoard {
     fn make_move(&self, m: &Move) -> Self;
 }
 
-trait MakeUnmakeBoard {
+pub trait MakeUnmakeBoard {
     fn make_move(&mut self, m: &Move);
     fn unmake_move(&mut self, m: &Move);
 }
