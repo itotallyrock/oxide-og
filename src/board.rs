@@ -191,7 +191,7 @@ mod tests {
             castles_used: Default::default(),
             enpassant_capture: false
         };
-        let moved_position = position.make_move(&m);
+        let moved_position = CopyMakeBoard::make_move(&position, &m );
         assert_eq!(String::from(moved_position), "8/8/8/8/4P3/8/8/8 b - e3 0 1".to_string(), "Updated FEN was not as expected after make move");
     }
 }
