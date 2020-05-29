@@ -59,7 +59,7 @@ impl From<ColoredPiece> for usize {
 }
 
 impl Piece {
-    /// Color the regular piece so it belonds to a side
+    /// Color the regular piece so it belongs to a side
     pub fn color(&self, side: Side) -> ColoredPiece {
         match self {
             Piece::Pawn =>
