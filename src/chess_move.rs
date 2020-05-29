@@ -3,6 +3,7 @@ use super::pieces;
 use super::square;
 use super::castles;
 use super::side;
+use crate::pieces::PieceRepr;
 
 /// Allows converting move to SAN
 pub trait SanMove {
@@ -27,7 +28,7 @@ pub struct Move {
     pub from: square::Square,
     /// What square is being moved to
     pub to: square::Square,
-    /// What piece is being catpured
+    /// What piece is being captured
     pub captured_piece: Option<pieces::Piece>,
     /// What piece is this being promoted to
     pub promoted_piece: Option<pieces::Piece>,
@@ -41,13 +42,13 @@ pub struct Move {
 
 impl Move {
     pub fn new_castle_permissions(&self, current_rights: castles::CastlePermissions) -> castles::CastlePermissions {
-        let mut new_rights = current_rights;
+        let mut new_rights: castles::CastlePermissions = current_rights;
         if self.piece == pieces::Piece::Rook {
             match self.from.offset {
-                7 if self.side == side::Side::White => { new_rights &= castles::CastlePermissions::BLACK_ALL_WHITE_QUEEN; },
-                0 if self.side == side::Side::White => { new_rights &= castles::CastlePermissions::BLACK_ALL_WHITE_KING; },
-                63 if self.side == side::Side::Black => { new_rights &= castles::CastlePermissions::WHITE_ALL_BLACK_QUEEN; },
-                56 if self.side == side::Side::Black => { new_rights &= castles::CastlePermissions::WHITE_ALL_BLACK_KING; },
+                square::named::H1 if self.side == side::Side::White => { new_rights &= castles::CastlePermissions::BLACK_ALL_WHITE_QUEEN; },
+                square::named::A1 if self.side == side::Side::White => { new_rights &= castles::CastlePermissions::BLACK_ALL_WHITE_KING; },
+                square::named::H8 if self.side == side::Side::Black => { new_rights &= castles::CastlePermissions::WHITE_ALL_BLACK_QUEEN; },
+                square::named::A8 if self.side == side::Side::Black => { new_rights &= castles::CastlePermissions::WHITE_ALL_BLACK_KING; },
                 _ => { },
             }
         } else if !self.castles_used.is_empty() || self.piece == pieces::Piece::King {
@@ -59,5 +60,12 @@ impl Move {
         }
 
         new_rights
+    }
+}
+
+impl UCIMove for Move {
+    fn to_uci(&self) -> String {
+        let promotion = if self.promoted_piece.is_some() { self.promoted_piece.unwrap().to_ascii().to_string() } else { String::from("") };
+        format!("{}{}{}", self.from.to_string(), self.to.to_string(), promotion)
     }
 }
