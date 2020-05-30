@@ -1,6 +1,7 @@
 
 use std::convert::TryFrom;
 use super::errors;
+use std::fmt::Formatter;
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Side {
@@ -13,6 +14,15 @@ impl Side {
         match self {
             Side::White => Side::Black,
             _ => Side::White,
+        }
+    }
+}
+
+impl std::fmt::Display for Side {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Side::White => write!(f, "white"),
+            Side::Black => write!(f, "black"),
         }
     }
 }
