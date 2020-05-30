@@ -304,10 +304,4 @@ mod tests {
             assert_eq!(output_fen, fen.clone(), "Output FEN did not match input FEN\nExpected: '{}'\nFound:    '{}'", fen, output_fen);
         }
     }
-
-    #[test]
-    fn bitboard_works() {
-        let bb: u64 = 0x18243c24186681;
-        Position::print_bitboard(bb);
-    }
 }
