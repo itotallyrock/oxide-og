@@ -137,13 +137,9 @@ impl Square {
     }
 }
 
-impl ToString for Square {
-    fn to_string(&self) -> String {
-        let mut string = String::with_capacity(2);
-        string.push(FILE_CHARS[self.x() as usize]);
-        string.push(RANK_CHARS[self.y() as usize]);
-
-        string
+impl std::fmt::Display for Square {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", FILE_CHARS[self.x() as usize], RANK_CHARS[self.y() as usize])
     }
 }
 
@@ -177,13 +173,12 @@ impl TryFrom<String> for Square {
     }
 }
 
-impl TryFrom<u8> for Square {
-    type Error = String;
-    fn try_from(offset: u8) -> Result<Self, Self::Error> {
+impl From<u8> for Square {
+    fn from(offset: u8) -> Self {
         if offset > 63 {
-            Err(format!("Offset must be between 0 and 63, received '{}'", offset))
+            panic!("Offset must be between 0 and 63, received '{}'", offset)
         } else {
-            Ok(Square { offset })
+            Square { offset }
         }
     }
 }
