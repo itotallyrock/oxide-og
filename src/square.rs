@@ -2,6 +2,8 @@
 use std::convert::TryFrom;
 
 use super::errors;
+use std::collections::VecDeque;
+use std::fmt::Formatter;
 
 pub const FILE_CHARS: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 pub const RANK_CHARS: [char; 8] = ['1', '2', '3', '4', '5', '6', '7', '8'];
@@ -114,7 +116,29 @@ pub mod named {
     pub const H8: u8 = 63;
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone)]
+/// Convert a unsigned 64 bit mask to an iterator over each set (1 at that offset) square
+pub fn mask_to_square_iter(mask: u64) -> impl Iterator<Item=Square> {
+    let mut squares: VecDeque<Square> = VecDeque::with_capacity(mask.count_ones() as usize);
+    let mut mutable_mask = mask.clone();
+
+    while mutable_mask > 0 {
+        // Get index of first 1
+        let square_offset = mutable_mask.trailing_zeros() as u8;
+        // Unset bit
+        mutable_mask ^= 1u64 << square_offset as u64;
+
+        // Get the offset of the first set bit and remove it
+        //let square_offset = bit_utils::pop_left(mask_copy);
+        // Create target square
+        let square = Square { offset: square_offset };
+        // Add square to squares
+        squares.push_back(square);
+    }
+
+    squares.into_iter()
+}
+
+#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone, Debug)]
 pub struct Square {
     pub offset: u8,
 }
