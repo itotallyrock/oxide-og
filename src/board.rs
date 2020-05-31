@@ -51,7 +51,7 @@ impl MutablePosition for Position {
 }
 
 pub trait CopyMakeBoard {
-    fn make_move(&self, m: &Move) -> Self;
+    fn make_move(self, m: &Move) -> Self;
 }
 
 pub trait MakeUnmakeBoard {
@@ -179,10 +179,9 @@ impl MakeUnmakeBoard for Position {
 }
 
 impl CopyMakeBoard for Position {
-    fn make_move(&self, m: &Move) -> Self {
-        let mut copy_board = self.clone();
-        <Position as MakeUnmakeBoard>::make_move(copy_board.borrow_mut(), m);
-        copy_board
+    fn make_move(mut self, m: &Move) -> Self {
+        <Position as MakeUnmakeBoard>::make_move(&mut self, m);
+        self
     }
 }
 
@@ -204,7 +203,7 @@ mod tests {
             castles_used: Default::default(),
             enpassant_capture: false
         };
-        let moved_position = CopyMakeBoard::make_move(&position, &m );
+        let moved_position = CopyMakeBoard::make_move(position, &m );
         assert_eq!(String::from(moved_position), "8/8/8/8/4P3/8/8/8 b - e3 0 1".to_string(), "Updated FEN was not as expected after make move");
     }
 }
