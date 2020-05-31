@@ -8,6 +8,7 @@ use super::square::Square;
 use super::pieces::{ColoredPiece};
 use super::errors;
 use super::pieces::PieceRepr;
+use crate::bitboard::Bitboard;
 
 #[derive(Copy, Clone)]
 pub struct Position {
@@ -22,22 +23,27 @@ pub struct Position {
 
 impl Position {
     /// Occupied bit mask
+    #[inline]
     pub fn occupied_mask(&self) -> u64 {
         self.piece_masks[0] | self.piece_masks[1] | self.piece_masks[2] | self.piece_masks[3] | self.piece_masks[4] | self.piece_masks[5] | self.piece_masks[6] | self.piece_masks[7] | self.piece_masks[8] | self.piece_masks[9] | self.piece_masks[10] | self.piece_masks[11]
     }
     /// Empty bit mask
+    #[inline]
     pub fn empty_mask(&self) -> u64 {
         !self.occupied_mask()
     }
-
+    /// White occupied mask
+    #[inline]
     pub fn white_mask(&self) -> u64 {
         self.piece_masks[0] | self.piece_masks[1] | self.piece_masks[2] | self.piece_masks[3] | self.piece_masks[4] | self.piece_masks[5]
     }
-
+    /// Black occupied mask
+    #[inline]
     pub fn black_mask(&self) -> u64 {
         self.piece_masks[6] | self.piece_masks[7] | self.piece_masks[8] | self.piece_masks[9] | self.piece_masks[10] | self.piece_masks[11]
     }
-
+    /// Get piece occupied mask
+    #[inline]
     pub fn piece_mask(&self, piece: ColoredPiece) -> u64 {
         match piece {
             ColoredPiece::WPawn => self.piece_masks[ColoredPiece::WPawn as usize],
@@ -72,6 +78,7 @@ impl Position {
     }
 }
 
+/// Empty board, white to move, no castles position
 impl Default for Position {
     fn default() -> Self {
         Position {
@@ -86,6 +93,7 @@ impl Default for Position {
     }
 }
 
+/// Parse FEN string into position
 impl TryFrom<String> for Position {
     type Error = errors::FenParseError;
     fn try_from(fen: String) -> Result<Self, Self::Error> {
@@ -159,7 +167,7 @@ impl From<Position> for String {
         let mut squares_mapped: [[ColoredPiece; 8]; 8] = [[ColoredPiece::None; 8]; 8];
 
         for offset in 0..64usize {
-            let square = Square::try_from(offset as u8).unwrap();
+            let square = Square::from(offset as u8);
             squares_mapped[square.y() as usize][square.x() as usize] = pos.squares[offset];
         }
 
