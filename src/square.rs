@@ -30,6 +30,9 @@ pub mod masks {
     pub const RANK_7: u64 = 0x00FF000000000000;
     pub const RANK_8: u64 = 0xFF00000000000000;
 
+    pub const ALL: u64 = 0xFFFFFFFFFFFFFFFF;
+    pub const NONE: u64 = 0x0;
+
     // Neighbor files
     pub mod neighbors {
         pub const A_FILE: u64 = super::B_FILE;
