@@ -42,7 +42,7 @@ pub struct Move {
 }
 
 impl Move {
-
+    #[inline]
     pub fn new(side: Side, piece: Piece, from: Square, to: Square) -> Move {
         Move {
             side,
@@ -56,20 +56,25 @@ impl Move {
             enpassant_capture: false
         }
     }
-
+    #[inline]
     pub fn capture(&mut self, captured_piece: Piece) -> &mut Self {
         self.captured_piece = Some(captured_piece);
         self
     }
-
+    #[inline]
     pub fn promote(&mut self, promoted_piece: Piece) -> &mut Self {
         self.promoted_piece = Some(promoted_piece);
         self
     }
-
+    #[inline]
     pub fn en_passant_capture(&mut self) -> &mut Self {
         self.captured_piece = Some(Piece::Pawn);
         self.enpassant_capture = true;
+        self
+    }
+    #[inline]
+    pub fn double_jump(&mut self, en_passant_square: Square) -> &mut Self {
+        self.enpassant_square = Some(en_passant_square);
         self
     }
 
