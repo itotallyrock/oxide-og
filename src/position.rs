@@ -132,9 +132,9 @@ impl TryFrom<String> for Position {
                 total_offset -= 16u8;
             } else {
                 let piece = ColoredPiece::from(board_char);
-                let square = Square { offset: total_offset };
+                let square = Square(total_offset);
                 piece_masks[piece as usize] |= square.mask();
-                squares[square.offset as usize] = piece;
+                squares[total_offset as usize] = piece;
                 total_offset += 1;
             }
         }
@@ -167,7 +167,7 @@ impl From<Position> for String {
         let mut squares_mapped: [[ColoredPiece; 8]; 8] = [[ColoredPiece::None; 8]; 8];
 
         for offset in 0..64usize {
-            let square = Square::from(offset as u8);
+            let square = Square(offset as u8);
             squares_mapped[square.y() as usize][square.x() as usize] = pos.squares[offset];
         }
 

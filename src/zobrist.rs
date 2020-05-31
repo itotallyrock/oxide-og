@@ -1,5 +1,6 @@
 
 use super::position;
+use super::square::Square;
 use super::castles::CastlePermissions;
 use super::side::Side;
 use crate::pieces::ColoredPiece;
@@ -49,7 +50,8 @@ impl ZobristHashable for position::Position {
         }
 
         if self.enpassant_square.is_some() {
-            hash ^= ZOBRIST_KEYS[773 + (self.enpassant_square.unwrap().offset as usize)];
+            let Square(offset) = self.enpassant_square.unwrap();
+            hash ^= ZOBRIST_KEYS[773 + (offset as usize)];
         }
 
         hash

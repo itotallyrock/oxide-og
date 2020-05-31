@@ -5,6 +5,7 @@ use super::position::Position;
 use super::chess_move::Move;
 use super::side::Side;
 use super::pieces::{ColoredPiece, Piece};
+use super::square;
 use super::square::Square;
 use super::castles::CastlePermissions;
 use std::borrow::BorrowMut;
@@ -23,21 +24,29 @@ impl MutablePosition for Position {
     fn add_piece(&mut self, p: ColoredPiece, to: Square) {
         // Add to piece mask
         self.piece_masks[p as usize] |= to.mask();
+        // Get to_offset
+        let Square(to_offset) = to;
         // Add to squares list
-        self.squares[to.offset as usize] = p;
+        self.squares[to_offset as usize] = p;
     }
     fn remove_piece(&mut self, p: ColoredPiece, from: Square) {
         // Remove from piece mask
         self.piece_masks[p as usize] &= !from.mask();
+        // Get from_offset
+        let Square(from_offset) = from;
         // Set piece to none
-        self.squares[from.offset as usize] = ColoredPiece::None;
+        self.squares[from_offset as usize] = ColoredPiece::None;
     }
     fn move_piece(&mut self, p: ColoredPiece, from: Square, to: Square) {
         // Update piece mask by removing from 'from' and adding to 'to'
         self.piece_masks[p as usize] ^= from.mask() ^ to.mask();
+        // Get from_offset
+        let Square(from_offset) = from;
+        // Get to_offset
+        let Square(to_offset) = to;
         // Update squares
-        self.squares[from.offset as usize] = ColoredPiece::None;
-        self.squares[to.offset as usize] = p;
+        self.squares[from_offset as usize] = ColoredPiece::None;
+        self.squares[to_offset as usize] = p;
     }
 }
 
@@ -73,23 +82,25 @@ impl MakeUnmakeBoard for Position {
             self.move_piece(Piece::King.color(m.side), m.from, m.to);
             // Move appropriate rook
             if m.side == Side::White {
-                self.move_piece(ColoredPiece::WRook, Square::try_from(7).unwrap(), Square::try_from(5).unwrap());
+                self.move_piece(ColoredPiece::WRook, square::named::H1, square::named::F1);
             } else {
-                self.move_piece(ColoredPiece::BRook, Square::try_from(63).unwrap(), Square::try_from(61).unwrap());
+                self.move_piece(ColoredPiece::BRook, square::named::H8, square::named::F8);
             }
         } else if m.castles_used.intersects(CastlePermissions::BOTH_QUEENS) {
             // Move the king
             self.move_piece(Piece::King.color(m.side), m.from, m.to);
             // Move appropriate rook
             if m.side == Side::White {
-                self.move_piece(ColoredPiece::WRook, Square::try_from(0).unwrap(), Square::try_from(3).unwrap());
+                self.move_piece(ColoredPiece::WRook, square::named::A1, square::named::D1);
             } else {
-                self.move_piece(ColoredPiece::BRook, Square::try_from(56).unwrap(), Square::try_from(59).unwrap());
+                self.move_piece(ColoredPiece::BRook, square::named::A8, square::named::D8);
             }
         } else if m.enpassant_capture {
+            // Get to offset
+            let Square(to_offset) = m.to;
             // Get location of jumped over pawn
-            let en_passant_offset = ((m.to.offset as i8) + if m.side == Side::White { -8 } else { 8 }) as u8;
-            let en_passant_square = Square::try_from(en_passant_offset).unwrap();
+            let en_passant_offset = ((to_offset as i8) + if m.side == Side::White { -8 } else { 8 }) as u8;
+            let en_passant_square = Square(en_passant_offset);
             // Remove en passant pawn
             self.remove_piece(Piece::Pawn.color(m.side.opposite()), en_passant_square);
             // Move the piece
@@ -108,6 +119,7 @@ impl MakeUnmakeBoard for Position {
     fn unmake_move(&mut self, m: &Move) {
         self.enpassant_square = m.enpassant_square;
         // Update castling rights (works because xor is symmetric)
+        // TODO: Test castle rights are updated correctly
         self.castle_rights = m.new_castle_permissions(self.castle_rights);
         self.side = self.side.opposite();
 
@@ -129,25 +141,26 @@ impl MakeUnmakeBoard for Position {
             self.move_piece(Piece::King.color(m.side), m.to, m.from);
             // Move appropriate rook
             if m.side == Side::White {
-                self.move_piece(ColoredPiece::WRook, Square::try_from(5).unwrap(), Square::try_from(7).unwrap());
+                self.move_piece(ColoredPiece::WRook, square::named::F1, square::named::H1);
             } else {
-                self.move_piece(ColoredPiece::BRook, Square::try_from(61).unwrap(), Square::try_from(63).unwrap());
+                self.move_piece(ColoredPiece::BRook, square::named::F8, square::named::H8);
             }
         } else if m.castles_used.intersects(CastlePermissions::BOTH_QUEENS) {
             // Move the king
             self.move_piece(Piece::King.color(m.side), m.to, m.from);
             // Move appropriate rook
             if m.side == Side::White {
-                self.move_piece(ColoredPiece::WRook, Square::try_from(3).unwrap(), Square::try_from(0).unwrap());
+                self.move_piece(ColoredPiece::WRook, square::named::D1, square::named::A1);
             } else {
-                self.move_piece(ColoredPiece::BRook, Square::try_from(59).unwrap(), Square::try_from(56).unwrap());
+                self.move_piece(ColoredPiece::BRook, square::named::D8, square::named::A8);
             }
         } else if m.enpassant_capture {
             // TODO: TEST ME
             // Get location of jumped over pawn
             // TODO: Checkme
-            let en_passant_offset = ((m.to.offset as i8) + if m.side == Side::White { -8 } else { 8 }) as u8;
-            let en_passant_square = Square::try_from(en_passant_offset).unwrap();
+            let Square(to_offset) = m.to;
+            let en_passant_offset = ((to_offset as i8) + if m.side == Side::White { -8 } else { 8 }) as u8;
+            let en_passant_square = Square(en_passant_offset);
             // Move the piece
             // TODO: Checkme
             self.move_piece(m.piece.color(m.side), m.from, m.to);
@@ -183,11 +196,11 @@ mod tests {
         let m = Move {
             side: Side::White,
             piece: Piece::Pawn,
-            from: Square { offset: 12 },
-            to: Square { offset: 28 },
+            from: square::named::E2,
+            to: square::named::E4,
             captured_piece: None,
             promoted_piece: None,
-            enpassant_square: Some(Square { offset: 20 }),
+            enpassant_square: Some(square::named::E3),
             castles_used: Default::default(),
             enpassant_capture: false
         };

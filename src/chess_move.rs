@@ -78,8 +78,8 @@ impl Move {
         Move {
             side: Side::White,
             piece: Piece::King,
-            from: square::named::E1.into(),
-            to: square::named::G1.into(),
+            from: square::named::E1,
+            to: square::named::G1,
             captured_piece: None,
             promoted_piece: None,
             enpassant_square: None,
@@ -136,7 +136,7 @@ impl Move {
     pub fn new_castle_permissions(&self, current_rights: CastlePermissions) -> CastlePermissions {
         let mut new_rights: CastlePermissions = current_rights;
         if self.piece == Piece::Rook {
-            match self.from.offset {
+            match self.from {
                 square::named::H1 if self.side == Side::White => { new_rights &= CastlePermissions::BLACK_ALL_WHITE_QUEEN; },
                 square::named::A1 if self.side == Side::White => { new_rights &= CastlePermissions::BLACK_ALL_WHITE_KING; },
                 square::named::H8 if self.side == Side::Black => { new_rights &= CastlePermissions::WHITE_ALL_BLACK_QUEEN; },

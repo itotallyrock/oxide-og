@@ -4,6 +4,8 @@ use std::convert::TryFrom;
 use super::errors;
 use std::collections::VecDeque;
 use std::fmt::Formatter;
+use core::fmt;
+use std::ops::{Add, Sub};
 
 pub const FILE_CHARS: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 pub const RANK_CHARS: [char; 8] = ['1', '2', '3', '4', '5', '6', '7', '8'];
@@ -42,78 +44,80 @@ pub mod masks {
 }
 
 pub mod named {
+    use super::Square;
+
     // Rank 1
-    pub const A1: u8 = 0;
-    pub const B1: u8 = 1;
-    pub const C1: u8 = 2;
-    pub const D1: u8 = 3;
-    pub const E1: u8 = 4;
-    pub const F1: u8 = 5;
-    pub const G1: u8 = 6;
-    pub const H1: u8 = 7;
+    pub const A1: Square = Square(0);
+    pub const B1: Square = Square(1);
+    pub const C1: Square = Square(2);
+    pub const D1: Square = Square(3);
+    pub const E1: Square = Square(4);
+    pub const F1: Square = Square(5);
+    pub const G1: Square = Square(6);
+    pub const H1: Square = Square(7);
     // Rank 2
-    pub const A2: u8 = 8;
-    pub const B2: u8 = 9;
-    pub const C2: u8 = 10;
-    pub const D2: u8 = 11;
-    pub const E2: u8 = 12;
-    pub const F2: u8 = 13;
-    pub const G2: u8 = 14;
-    pub const H2: u8 = 15;
+    pub const A2: Square = Square(8);
+    pub const B2: Square = Square(9);
+    pub const C2: Square = Square(10);
+    pub const D2: Square = Square(11);
+    pub const E2: Square = Square(12);
+    pub const F2: Square = Square(13);
+    pub const G2: Square = Square(14);
+    pub const H2: Square = Square(15);
     // Rank 3
-    pub const A3: u8 = 16;
-    pub const B3: u8 = 17;
-    pub const C3: u8 = 18;
-    pub const D3: u8 = 19;
-    pub const E3: u8 = 20;
-    pub const F3: u8 = 21;
-    pub const G3: u8 = 22;
-    pub const H3: u8 = 23;
+    pub const A3: Square = Square(16);
+    pub const B3: Square = Square(17);
+    pub const C3: Square = Square(18);
+    pub const D3: Square = Square(19);
+    pub const E3: Square = Square(20);
+    pub const F3: Square = Square(21);
+    pub const G3: Square = Square(22);
+    pub const H3: Square = Square(23);
     // Rank 4
-    pub const A4: u8 = 24;
-    pub const B4: u8 = 25;
-    pub const C4: u8 = 26;
-    pub const D4: u8 = 27;
-    pub const E4: u8 = 28;
-    pub const F4: u8 = 29;
-    pub const G4: u8 = 30;
-    pub const H4: u8 = 31;
+    pub const A4: Square = Square(24);
+    pub const B4: Square = Square(25);
+    pub const C4: Square = Square(26);
+    pub const D4: Square = Square(27);
+    pub const E4: Square = Square(28);
+    pub const F4: Square = Square(29);
+    pub const G4: Square = Square(30);
+    pub const H4: Square = Square(31);
     // Rank 5
-    pub const A5: u8 = 32;
-    pub const B5: u8 = 33;
-    pub const C5: u8 = 34;
-    pub const D5: u8 = 35;
-    pub const E5: u8 = 36;
-    pub const F5: u8 = 37;
-    pub const G5: u8 = 38;
-    pub const H5: u8 = 39;
+    pub const A5: Square = Square(32);
+    pub const B5: Square = Square(33);
+    pub const C5: Square = Square(34);
+    pub const D5: Square = Square(35);
+    pub const E5: Square = Square(36);
+    pub const F5: Square = Square(37);
+    pub const G5: Square = Square(38);
+    pub const H5: Square = Square(39);
     // Rank 6
-    pub const A6: u8 = 40;
-    pub const B6: u8 = 41;
-    pub const C6: u8 = 42;
-    pub const D6: u8 = 43;
-    pub const E6: u8 = 44;
-    pub const F6: u8 = 45;
-    pub const G6: u8 = 46;
-    pub const H6: u8 = 47;
+    pub const A6: Square = Square(40);
+    pub const B6: Square = Square(41);
+    pub const C6: Square = Square(42);
+    pub const D6: Square = Square(43);
+    pub const E6: Square = Square(44);
+    pub const F6: Square = Square(45);
+    pub const G6: Square = Square(46);
+    pub const H6: Square = Square(47);
     // Rank 7
-    pub const A7: u8 = 48;
-    pub const B7: u8 = 49;
-    pub const C7: u8 = 50;
-    pub const D7: u8 = 51;
-    pub const E7: u8 = 52;
-    pub const F7: u8 = 53;
-    pub const G7: u8 = 54;
-    pub const H7: u8 = 55;
+    pub const A7: Square = Square(48);
+    pub const B7: Square = Square(49);
+    pub const C7: Square = Square(50);
+    pub const D7: Square = Square(51);
+    pub const E7: Square = Square(52);
+    pub const F7: Square = Square(53);
+    pub const G7: Square = Square(54);
+    pub const H7: Square = Square(55);
     // Rank 8
-    pub const A8: u8 = 56;
-    pub const B8: u8 = 57;
-    pub const C8: u8 = 58;
-    pub const D8: u8 = 59;
-    pub const E8: u8 = 60;
-    pub const F8: u8 = 61;
-    pub const G8: u8 = 62;
-    pub const H8: u8 = 63;
+    pub const A8: Square = Square(56);
+    pub const B8: Square = Square(57);
+    pub const C8: Square = Square(58);
+    pub const D8: Square = Square(59);
+    pub const E8: Square = Square(60);
+    pub const F8: Square = Square(61);
+    pub const G8: Square = Square(62);
+    pub const H8: Square = Square(63);
 }
 
 /// Convert a unsigned 64 bit mask to an iterator over each set (1 at that offset) square
@@ -124,13 +128,10 @@ pub fn mask_to_square_iter(mask: u64) -> impl Iterator<Item=Square> {
     while mutable_mask > 0 {
         // Get index of first 1
         let square_offset = mutable_mask.trailing_zeros() as u8;
-        // Unset bit
-        mutable_mask ^= 1u64 << square_offset as u64;
-
-        // Get the offset of the first set bit and remove it
-        //let square_offset = bit_utils::pop_left(mask_copy);
         // Create target square
-        let square = Square { offset: square_offset };
+        let square = Square(square_offset);
+        // Unset bit
+        mutable_mask ^= square.mask();
         // Add square to squares
         squares.push_back(square);
     }
@@ -138,35 +139,113 @@ pub fn mask_to_square_iter(mask: u64) -> impl Iterator<Item=Square> {
     squares.into_iter()
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone, Debug)]
-pub struct Square {
-    pub offset: u8,
-}
+/*
+pub mod old {
+    #[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Copy, Clone, Debug)]
+    pub struct Square {
+        pub offset: u8,
+    }
+
+    impl Square {
+        pub fn x(&self) -> u8 {
+            self.offset % 8
+        }
+        pub fn y(&self) -> u8 {
+            self.offset / 8
+        }
+        pub fn rank(&self) -> char {
+            RANK_CHARS[self.y() as usize]
+        }
+        pub fn file(&self) -> char {
+            FILE_CHARS[self.x() as usize]
+        }
+        pub fn mask(&self) -> u64 {
+            1u64 << self.offset as u64
+        }
+    }
+
+    impl std::fmt::Display for Square {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}{}", FILE_CHARS[self.x() as usize], RANK_CHARS[self.y() as usize])
+        }
+    }
+
+    impl TryFrom<String> for Square {
+        type Error = errors::SquareParseError;
+        fn try_from(file_rank: String) -> Result<Self, Self::Error> {
+            let file_string_copy = file_rank.clone();
+            let mut file_rank_chars = file_string_copy.chars();
+            let err = errors::SquareParseError::SquareLengthError(file_rank.clone());
+            let file = file_rank_chars.next().ok_or(err.clone())?;
+            let rank = file_rank_chars.next().ok_or(err.clone())?;
+            // If we took 2 chars but there is more left error
+            if file_rank_chars.next().is_some() {
+                return Err(err.clone());
+            }
+            let file_index = FILE_CHARS.iter().position(|&c| c == file);
+            let rank_index = RANK_CHARS.iter().position(|&c| c == rank);
+
+            if file_index.is_none() {
+                let err = errors::SquareParseError::SquareFileError(file);
+                return Err(err);
+            }
+            if rank_index.is_none() {
+                let err = errors::SquareParseError::SquareRankError(rank);
+                return Err(err);
+            }
+
+            Ok(Square {
+                offset: (rank_index.unwrap() as u8) * 8 + (file_index.unwrap() as u8),
+            })
+        }
+    }
+
+    impl From<u8> for Square {
+        fn from(offset: u8) -> Self {
+            if offset > 63 {
+                panic!("Offset must be between 0 and 63, received '{}'", offset)
+            } else {
+                Square { offset }
+            }
+        }
+    }
+}*/
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct Square(pub u8);
 
 impl Square {
-    pub fn x(&self) -> u8 {
-        self.offset % 8
+    #[deprecated(note = "Square is now just a trait on the offset itself, offset is no longer needed")]
+    #[inline]
+    pub fn offset(self) -> u8 {
+        let Square(offset) = self;
+        offset
     }
-    pub fn y(&self) -> u8 {
-        self.offset / 8
+    #[inline]
+    pub fn x(self) -> u8 {
+        let Square(offset) = self;
+        offset % 8u8
     }
-    pub fn rank(&self) -> char {
-        RANK_CHARS[self.y() as usize]
+    #[inline]
+    pub fn y(self) -> u8 {
+        let Square(offset) = self;
+        offset / 8u8
     }
-    pub fn file(&self) -> char {
-        FILE_CHARS[self.x() as usize]
-    }
-    pub fn mask(&self) -> u64 {
-        1u64 << self.offset as u64
+    #[inline]
+    pub fn mask(self) -> u64 {
+        let Square(offset) = self;
+        1u64 << offset as u64
     }
 }
-
-impl std::fmt::Display for Square {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Square {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let Square(offset) = self.clone();
+        if offset > 63 {
+            panic!("Attempting to convert invalid move into string");
+        }
         write!(f, "{}{}", FILE_CHARS[self.x() as usize], RANK_CHARS[self.y() as usize])
     }
 }
-
 impl TryFrom<String> for Square {
     type Error = errors::SquareParseError;
     fn try_from(file_rank: String) -> Result<Self, Self::Error> {
@@ -179,49 +258,105 @@ impl TryFrom<String> for Square {
         if file_rank_chars.next().is_some() {
             return Err(err.clone());
         }
-        let file_index = FILE_CHARS.iter().position(|&c| c == file);
-        let rank_index = RANK_CHARS.iter().position(|&c| c == rank);
+        let file_index = FILE_CHARS.iter().position(|&c| c == file).ok_or(errors::SquareParseError::SquareFileError(file))? as u8;
+        let rank_index = RANK_CHARS.iter().position(|&c| c == rank).ok_or(errors::SquareParseError::SquareRankError(rank))? as u8;
 
-        if file_index.is_none() {
-            let err = errors::SquareParseError::SquareFileError(file);
-            return Err(err);
-        }
-        if rank_index.is_none() {
-            let err = errors::SquareParseError::SquareRankError(rank);
-            return Err(err);
-        }
-
-        Ok(Square {
-            offset: (rank_index.unwrap() as u8) * 8 + (file_index.unwrap() as u8),
-        })
+        Ok(Square(rank_index * 8 + file_index))
     }
 }
+impl Add<u8> for Square {
+    type Output = Square;
 
-impl From<u8> for Square {
-    fn from(offset: u8) -> Self {
-        if offset > 63 {
-            panic!("Offset must be between 0 and 63, received '{}'", offset)
-        } else {
-            Square { offset }
-        }
+    #[inline]
+    fn add(self, rhs: u8) -> Self::Output {
+        let Square(offset) = self;
+        Square(offset + rhs)
     }
 }
+impl Sub<u8> for Square {
+    type Output = Square;
 
+    #[inline]
+    fn sub(self, rhs: u8) -> Self::Output {
+        let Square(offset) = self;
+        Square(offset - rhs)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn from_offset_works() {
-        for offset in 0..64 {
-            let square: Square = offset.into();
-            assert_eq!(square.offset, offset, "Failed to set square offset from offset");
-        }
+    fn x_works() {
+        // Bottom left to top right diagonal
+        assert_eq!(named::A1.x(), 0u8);
+        assert_eq!(named::B2.x(), 1u8);
+        assert_eq!(named::C3.x(), 2u8);
+        assert_eq!(named::D4.x(), 3u8);
+        assert_eq!(named::E5.x(), 4u8);
+        assert_eq!(named::F6.x(), 5u8);
+        assert_eq!(named::G7.x(), 6u8);
+        assert_eq!(named::H8.x(), 7u8);
+        // Random squares
+        assert_eq!(Square(61).x(), 5u8);
+        assert_eq!(Square(38).x(), 6u8);
+        assert_eq!(Square(40).x(), 0u8);
+        assert_eq!(Square(34).x(), 2u8);
+        assert_eq!(Square(20).x(), 4u8);
+        assert_eq!(Square(6).x(), 6u8);
+    }
+
+    #[test]
+    fn y_works() {
+        // Bottom left to top right diagonal
+        assert_eq!(named::A1.y(), 0u8);
+        assert_eq!(named::B2.y(), 1u8);
+        assert_eq!(named::C3.y(), 2u8);
+        assert_eq!(named::D4.y(), 3u8);
+        assert_eq!(named::E5.y(), 4u8);
+        assert_eq!(named::F6.y(), 5u8);
+        assert_eq!(named::G7.y(), 6u8);
+        assert_eq!(named::H8.y(), 7u8);
+        // Random squares
+        assert_eq!(Square(61).y(), 7u8);
+        assert_eq!(Square(38).y(), 4u8);
+        assert_eq!(Square(40).y(), 5u8);
+        assert_eq!(Square(34).y(), 4u8);
+        assert_eq!(Square(20).y(), 2u8);
+        assert_eq!(Square(6).y(), 0u8);
+    }
+
+    #[test]
+    fn mask_works() {
+        assert_eq!(named::A1.mask(), 0x1u64);
+        assert_eq!(named::B2.mask(), 0x200u64);
+        assert_eq!(named::C3.mask(), 0x40000u64);
+        assert_eq!(named::D4.mask(), 0x8000000u64);
+        assert_eq!(named::E5.mask(), 0x1000000000u64);
+        assert_eq!(named::F6.mask(), 0x200000000000u64);
+        assert_eq!(named::G7.mask(), 0x40000000000000u64);
+        assert_eq!(named::H8.mask(), 0x8000000000000000u64);
+        assert_eq!(named::H1.mask(), 0x80u64);
+        assert_eq!(named::A8.mask(), 0x100000000000000u64);
+    }
+
+    #[test]
+    fn to_string_works() {
+        assert_eq!(named::A2.to_string(), "a2");
+        assert_eq!(named::A5.to_string(), "a5");
+        assert_eq!(named::A2.to_string(), "a2");
+        assert_eq!(named::B3.to_string(), "b3");
+        assert_eq!(named::E4.to_string(), "e4");
+        assert_eq!(named::F8.to_string(), "f8");
+        assert_eq!(named::H1.to_string(), "h1");
+        assert_eq!(named::A8.to_string(), "a8");
     }
 
     #[test]
     #[should_panic]
-    fn from_bad_offset_gives_error() {
-        Square::from(65);
+    fn offboard_to_string_panics() {
+        Square(64).to_string();
     }
+
+    // TODO: Test TryFrom<String>
 }
