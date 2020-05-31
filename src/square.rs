@@ -214,13 +214,14 @@ mod tests {
     #[test]
     fn from_offset_works() {
         for offset in 0..64 {
-            let square = Square::try_from(offset).unwrap();
+            let square: Square = offset.into();
             assert_eq!(square.offset, offset, "Failed to set square offset from offset");
         }
     }
 
     #[test]
+    #[should_panic]
     fn from_bad_offset_gives_error() {
-        assert!(Square::try_from(65).is_err(), "Failed to return error on invalid square offset");
+        Square::from(65);
     }
 }
