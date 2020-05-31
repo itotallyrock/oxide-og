@@ -56,7 +56,7 @@ pub trait CopyMakeBoard {
 
 pub trait MakeUnmakeBoard {
     fn make_move(&mut self, m: &Move);
-    fn unmake_move(&mut self, m: &Move);
+    fn unmake_move(&mut self, m: &Move, prev_castle_permissions: CastlePermissions, prev_en_passant: Option<Square>, prev_half_move: Option<u8>);
 }
 
 impl MakeUnmakeBoard for Position {
@@ -64,6 +64,12 @@ impl MakeUnmakeBoard for Position {
         self.enpassant_square = m.enpassant_square;
         self.castle_rights = m.new_castle_permissions(self.castle_rights);
         self.side = self.side.opposite();
+        // Get new castle rights
+        let new_castle_right = m.new_castle_permissions(self.castle_rights);
+        if new_castle_right != self.castle_rights {
+            // Reset half move clock on castle change
+            self.halfmove_clock = Some(0);
+        }
 
         if m.captured_piece.is_some() && m.promoted_piece.is_some() {
             // Remove captured piece
@@ -72,11 +78,15 @@ impl MakeUnmakeBoard for Position {
             self.remove_piece(Piece::Pawn.color(m.side), m.from);
             // Add promoted piece
             self.add_piece(m.promoted_piece.unwrap().color(m.side), m.to);
+            // Reset half move clock on capture
+            self.halfmove_clock = Some(0);
         } else if m.captured_piece.is_some() {
             // Remove captured piece
             self.remove_piece(m.captured_piece.unwrap().color(m.side.opposite()), m.to);
             // Move the original piece
             self.move_piece(m.piece.color(m.side), m.from, m.to);
+            // Reset half move clock on capture
+            self.halfmove_clock = Some(0);
         } else if m.castles_used.intersects(CastlePermissions::BOTH_KINGS) {
             // Move the king
             self.move_piece(Piece::King.color(m.side), m.from, m.to);
@@ -105,22 +115,28 @@ impl MakeUnmakeBoard for Position {
             self.remove_piece(Piece::Pawn.color(m.side.opposite()), en_passant_square);
             // Move the piece
             self.move_piece(m.piece.color(m.side), m.from, m.to);
+            // Reset half move clock on capture
+            self.halfmove_clock = Some(0);
         } else if m.promoted_piece.is_some() {
             // Remove old pawn
             self.remove_piece(Piece::Pawn.color(m.side), m.from);
             // Add the promoted piece
             self.add_piece(m.promoted_piece.unwrap().color(m.side), m.to);
+            // Increment half move clock
+            self.halfmove_clock = if self.halfmove_clock.is_some() { Some(self.halfmove_clock.unwrap() + 1) } else { Some(0) };
         } else {
             // Handle regular moves
             self.move_piece(m.piece.color(m.side), m.from, m.to);
+            // Increment half move clock
+            self.halfmove_clock = if self.halfmove_clock.is_some() { Some(self.halfmove_clock.unwrap() + 1) } else { Some(0) };
         }
     }
 
-    fn unmake_move(&mut self, m: &Move) {
-        self.enpassant_square = m.enpassant_square;
+    fn unmake_move(&mut self, m: &Move, prev_castle_permissions: CastlePermissions, prev_en_passant: Option<Square>, prev_half_move: Option<u8>) {
+        self.enpassant_square = prev_en_passant;
+        self.halfmove_clock = prev_half_move;
         // Update castling rights (works because xor is symmetric)
-        // TODO: Test castle rights are updated correctly
-        self.castle_rights = m.new_castle_permissions(self.castle_rights);
+        self.castle_rights = prev_castle_permissions;
         self.side = self.side.opposite();
 
         if m.captured_piece.is_some() && m.promoted_piece.is_some() {
