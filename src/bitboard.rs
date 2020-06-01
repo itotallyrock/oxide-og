@@ -11,6 +11,7 @@ pub trait Bitboard {
     fn south_east_shift(self) -> Self;
     fn south_west_shift(self) -> Self;
 
+    fn file_fill(self) -> Self;
     fn south_fill(self) -> Self;
     fn north_fill(self) -> Self;
     fn east_fill(self) -> Self;
@@ -107,6 +108,10 @@ impl Bitboard for u64 {
     #[inline]
     fn south_west_shift(self) -> Self {
         self >> 9 & NOT_H_FILE
+    }
+    #[inline]
+    fn file_fill(mut self) -> Self {
+        self.south_fill() | self.north_fill()
     }
     #[inline]
     fn south_fill(mut self) -> Self {
@@ -375,5 +380,13 @@ mod test {
         assert_eq!(Bitboard::south_west_occluded_fill(0x8040202018000000, 0x7fbfdfdfe3fffdff), 0x80402030180c0402);
         assert_eq!(Bitboard::south_west_occluded_fill(0x0, 0x0), 0x0);
         assert_eq!(Bitboard::south_west_occluded_fill(0x0, 0xffffffffffffffff), 0x0);
+    }
+
+    #[test]
+    fn file_fill_works() {
+        assert_eq!(Bitboard::file_fill(0xff), 0xffffffffffffffff);
+        assert_eq!(Bitboard::file_fill(0x55), 0x5555555555555555);
+        assert_eq!(Bitboard::file_fill(0x4404004001041050), 0x5555555555555555);
+        assert_eq!(Bitboard::file_fill(0x28200200000), 0xa2a2a2a2a2a2a2a2);
     }
 }
