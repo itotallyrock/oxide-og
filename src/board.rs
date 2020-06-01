@@ -40,13 +40,9 @@ impl MutablePosition for Position {
     fn move_piece(&mut self, p: ColoredPiece, from: Square, to: Square) {
         // Update piece mask by removing from 'from' and adding to 'to'
         self.piece_masks[p as usize] ^= from.mask() ^ to.mask();
-        // Get from_offset
-        let Square(from_offset) = from;
-        // Get to_offset
-        let Square(to_offset) = to;
         // Update squares
-        self.squares[from_offset as usize] = ColoredPiece::None;
-        self.squares[to_offset as usize] = p;
+        self.squares[from.0 as usize] = ColoredPiece::None;
+        self.squares[to.0 as usize] = p;
     }
 }
 
@@ -62,11 +58,12 @@ pub trait MakeUnmakeBoard {
 impl MakeUnmakeBoard for Position {
     fn make_move(&mut self, m: &Move) {
         self.enpassant_square = m.enpassant_square;
-        self.castle_rights = m.new_castle_permissions(self.castle_rights);
         self.side = self.side.opposite();
         // Get new castle rights
         let new_castle_right = m.new_castle_permissions(self.castle_rights);
         if new_castle_right != self.castle_rights {
+            // Update castle rights
+            self.castle_rights = new_castle_right;
             // Reset half move clock on castle change
             self.halfmove_clock = Some(0);
         }
@@ -123,12 +120,18 @@ impl MakeUnmakeBoard for Position {
             // Add the promoted piece
             self.add_piece(m.promoted_piece.unwrap().color(m.side), m.to);
             // Increment half move clock
-            self.halfmove_clock = if self.halfmove_clock.is_some() { Some(self.halfmove_clock.unwrap() + 1) } else { Some(0) };
+            self.halfmove_clock = Some(self.halfmove_clock.unwrap_or(0) + 1);
         } else {
             // Handle regular moves
             self.move_piece(m.piece.color(m.side), m.from, m.to);
-            // Increment half move clock
-            self.halfmove_clock = if self.halfmove_clock.is_some() { Some(self.halfmove_clock.unwrap() + 1) } else { Some(0) };
+            // Update halfmove clock
+            self.halfmove_clock = if m.piece == Piece::Pawn {
+                // If we moved a pawn reset
+                Some(0)
+            } else {
+                // Increment half move clock
+                Some(self.halfmove_clock.unwrap_or(0) + 1)
+            };
         }
     }
 
@@ -204,6 +207,208 @@ impl CopyMakeBoard for Position {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn make_white_king_castle_works() {
+        let mut position = Position::try_from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq - 0 1".to_string()).unwrap();
+        let m = Move::white_king_castle();
+        MakeUnmakeBoard::make_move(&mut position, &m);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::H1.0 as usize], ColoredPiece::None);
+        // Moved rook
+        assert_eq!(position.squares[square::named::F1.0 as usize], ColoredPiece::WRook);
+        // Moved king
+        assert_eq!(position.squares[square::named::G1.0 as usize], ColoredPiece::WKing);
+        // Removes old king
+        assert_eq!(position.squares[square::named::E1.0 as usize], ColoredPiece::None);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::WKing), 0x40);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::WRook), 0x21);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::BLACK_ALL);
+        // Reset half move clock
+        assert_eq!(position.halfmove_clock, Some(0));
+    }
+
+    #[test]
+    fn unmake_white_king_castle_works() {
+        let mut position = Position::try_from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1RK1 w Qkq - 3 1".to_string()).unwrap();
+        let m = Move::white_king_castle();
+        MakeUnmakeBoard::unmake_move(&mut position, &m, CastlePermissions::ALL, None, Some(3));
+        // Moved rook
+        assert_eq!(position.squares[square::named::H1.0 as usize], ColoredPiece::WRook);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::F1.0 as usize], ColoredPiece::None);
+        // Removes old king
+        assert_eq!(position.squares[square::named::G1.0 as usize], ColoredPiece::None);
+        // Moved king
+        assert_eq!(position.squares[square::named::E1.0 as usize], ColoredPiece::WKing);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::WKing), 0x10);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::WRook), 0x81);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::ALL);
+        // Update half move clock
+        assert_eq!(position.halfmove_clock, Some(3));
+    }
+
+    #[test]
+    fn make_black_king_castle_works() {
+        let mut position = Position::try_from("rnbqk2r/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap();
+        let m = Move::black_king_castle();
+        MakeUnmakeBoard::make_move(&mut position, &m);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::H8.0 as usize], ColoredPiece::None);
+        // Moved rook
+        assert_eq!(position.squares[square::named::F8.0 as usize], ColoredPiece::BRook);
+        // Moved king
+        assert_eq!(position.squares[square::named::G8.0 as usize], ColoredPiece::BKing);
+        // Removes old king
+        assert_eq!(position.squares[square::named::E8.0 as usize], ColoredPiece::None);
+        // Updates BKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::BKing), 0x4000000000000000);
+        // Updates BRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::BRook), 0x2100000000000000);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::WHITE_ALL);
+        // Reset half move clock
+        assert_eq!(position.halfmove_clock, Some(0));
+    }
+
+    fn unmake_black_king_castle_works() {
+        let mut position = Position::try_from("rnbq1rk1/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1".to_string()).unwrap();
+        let m = Move::black_king_castle();
+        MakeUnmakeBoard::unmake_move(&mut position, &m, CastlePermissions::ALL, None, Some(33));
+        // Moved rook
+        assert_eq!(position.squares[square::named::H1.0 as usize], ColoredPiece::WRook);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::F1.0 as usize], ColoredPiece::None);
+        // Removes old king
+        assert_eq!(position.squares[square::named::G1.0 as usize], ColoredPiece::None);
+        // Moved king
+        assert_eq!(position.squares[square::named::E1.0 as usize], ColoredPiece::WKing);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::WKing), 0x10);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::WRook), 0x81);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::ALL);
+        // Update half move clock
+        assert_eq!(position.halfmove_clock, Some(33));
+    }
+
+    #[test]
+    fn make_white_queen_castle_works() {
+        let mut position = Position::try_from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R3KBNR w KQkq - 0 1".to_string()).unwrap();
+        let m = Move::white_queen_castle();
+        MakeUnmakeBoard::make_move(&mut position, &m);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::A1.0 as usize], ColoredPiece::None);
+        // Moved rook
+        assert_eq!(position.squares[square::named::D1.0 as usize], ColoredPiece::WRook);
+        // Moved king
+        assert_eq!(position.squares[square::named::C1.0 as usize], ColoredPiece::WKing);
+        // Removes old king
+        assert_eq!(position.squares[square::named::E1.0 as usize], ColoredPiece::None);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::WKing), 0x4);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::WRook), 0x88);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::BLACK_ALL);
+        // Reset half move clock
+        assert_eq!(position.halfmove_clock, Some(0));
+    }
+
+    #[test]
+    fn unmake_white_queen_castle_works() {
+        let mut position = Position::try_from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/2KR1BNR w Kkq - 0 1".to_string()).unwrap();
+        let m = Move::white_queen_castle();
+        MakeUnmakeBoard::unmake_move(&mut position, &m, CastlePermissions::ALL, None, Some(33));
+        // Moved rook
+        assert_eq!(position.squares[square::named::A1.0 as usize], ColoredPiece::WRook);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::D1.0 as usize], ColoredPiece::None);
+        // Removes old king
+        assert_eq!(position.squares[square::named::C1.0 as usize], ColoredPiece::None);
+        // Moved king
+        assert_eq!(position.squares[square::named::E1.0 as usize], ColoredPiece::WKing);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::WKing), 0x10);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::WRook), 0x81);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::ALL);
+        // Update half move clock
+        assert_eq!(position.halfmove_clock, Some(33));
+    }
+
+    #[test]
+    fn make_black_queen_castle_works() {
+        let mut position = Position::try_from("r3kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap();
+        let m = Move::black_queen_castle();
+        MakeUnmakeBoard::make_move(&mut position, &m);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::A8.0 as usize], ColoredPiece::None);
+        // Moved rook
+        assert_eq!(position.squares[square::named::D8.0 as usize], ColoredPiece::BRook);
+        // Moved king
+        assert_eq!(position.squares[square::named::C8.0 as usize], ColoredPiece::BKing);
+        // Removes old king
+        assert_eq!(position.squares[square::named::E8.0 as usize], ColoredPiece::None);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::BKing), 0x400000000000000);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::BRook), 0x8800000000000000);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::WHITE_ALL);
+        // Reset half move clock
+        assert_eq!(position.halfmove_clock, Some(0));
+    }
+
+    #[test]
+    fn unmake_black_queen_castle_works() {
+        let mut position = Position::try_from("2kr1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1".to_string()).unwrap();
+        let m = Move::black_queen_castle();
+        MakeUnmakeBoard::unmake_move(&mut position, &m, CastlePermissions::ALL, None, Some(33));
+        // Moved rook
+        assert_eq!(position.squares[square::named::A8.0 as usize], ColoredPiece::BRook);
+        // Removes old rook
+        assert_eq!(position.squares[square::named::D8.0 as usize], ColoredPiece::None);
+        // Removes old king
+        assert_eq!(position.squares[square::named::C8.0 as usize], ColoredPiece::None);
+        // Moved king
+        assert_eq!(position.squares[square::named::E8.0 as usize], ColoredPiece::BKing);
+        // Updates WKing mask
+        assert_eq!(position.piece_mask(ColoredPiece::BKing), 0x1000000000000000);
+        // Updates WRook mask
+        assert_eq!(position.piece_mask(ColoredPiece::BRook), 0x8100000000000000);
+        // Update castle permissions
+        assert_eq!(position.castle_rights, CastlePermissions::ALL);
+        // Update half move clock
+        assert_eq!(position.halfmove_clock, Some(33));
+    }
+
+    #[test]
+    fn make_unmake_preserves_equality() {
+        let mut position = Position::try_from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string()).unwrap();
+        let m = Move {
+            side: Side::White,
+            piece: Piece::Pawn,
+            from: square::named::E2,
+            to: square::named::E4,
+            captured_piece: None,
+            promoted_piece: None,
+            enpassant_square: Some(square::named::E3),
+            castles_used: Default::default(),
+            enpassant_capture: false
+        };
+        MakeUnmakeBoard::make_move(&mut position, &m);
+        MakeUnmakeBoard::unmake_move(&mut position, &m, CastlePermissions::ALL, None, Some(0));
+        assert_eq!(String::from(position), "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string());
+    }
 
     #[test]
     fn copy_make_board_copies() {
