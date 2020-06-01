@@ -33,6 +33,22 @@ pub mod masks {
     pub const ALL: u64 = 0xFFFFFFFFFFFFFFFF;
     pub const NONE: u64 = 0x0;
 
+
+    #[inline]
+    pub fn file_for_x(x: u8) -> u64 {
+        match x {
+            0 => A_FILE,
+            1 => B_FILE,
+            2 => C_FILE,
+            3 => D_FILE,
+            4 => E_FILE,
+            5 => F_FILE,
+            6 => G_FILE,
+            7 => H_FILE,
+            _ => 0,
+        }
+    }
+
     // Neighbor files
     pub mod neighbors {
         pub const A_FILE: u64 = super::B_FILE;
@@ -361,5 +377,16 @@ mod tests {
         Square(64).to_string();
     }
 
+    #[test]
+    fn file_for_x_works() {
+        assert_eq!(masks::file_for_x(0), masks::A_FILE);
+        assert_eq!(masks::file_for_x(1), masks::B_FILE);
+        assert_eq!(masks::file_for_x(2), masks::C_FILE);
+        assert_eq!(masks::file_for_x(3), masks::D_FILE);
+        assert_eq!(masks::file_for_x(4), masks::E_FILE);
+        assert_eq!(masks::file_for_x(5), masks::F_FILE);
+        assert_eq!(masks::file_for_x(6), masks::G_FILE);
+        assert_eq!(masks::file_for_x(7), masks::H_FILE);
+    }
     // TODO: Test TryFrom<String>
 }

@@ -1,5 +1,5 @@
 
-use crate::square::masks::{A_FILE, H_FILE, ALL};
+use crate::square::masks::*;
 
 pub trait Bitboard {
     fn south_shift(self) -> Self;
