@@ -23,7 +23,7 @@ pub trait MutablePosition {
 impl MutablePosition for Position {
     fn add_piece(&mut self, p: ColoredPiece, to: Square) {
         // Add to piece mask
-        self.piece_masks[p as usize] |= to.mask();
+        *self.mut_piece_mask(p) |= to.mask();
         // Get to_offset
         let Square(to_offset) = to;
         // Add to squares list
@@ -31,7 +31,7 @@ impl MutablePosition for Position {
     }
     fn remove_piece(&mut self, p: ColoredPiece, from: Square) {
         // Remove from piece mask
-        self.piece_masks[p as usize] &= !from.mask();
+        *self.mut_piece_mask(p) &= !from.mask();
         // Get from_offset
         let Square(from_offset) = from;
         // Set piece to none
@@ -39,7 +39,7 @@ impl MutablePosition for Position {
     }
     fn move_piece(&mut self, p: ColoredPiece, from: Square, to: Square) {
         // Update piece mask by removing from 'from' and adding to 'to'
-        self.piece_masks[p as usize] ^= from.mask() ^ to.mask();
+        *self.mut_piece_mask(p) ^= from.mask() ^ to.mask();
         // Update squares
         self.squares[from.0 as usize] = ColoredPiece::None;
         self.squares[to.0 as usize] = p;

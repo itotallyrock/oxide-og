@@ -9,6 +9,7 @@ use super::pieces::{ColoredPiece};
 use super::errors;
 use super::pieces::PieceRepr;
 use crate::bitboard::Bitboard;
+use std::borrow::BorrowMut;
 
 #[derive(Copy, Clone)]
 pub struct Position {
@@ -18,7 +19,7 @@ pub struct Position {
     pub castle_rights: CastlePermissions,
     pub enpassant_square: Option<Square>,
     pub squares: [ColoredPiece; 64],
-    pub(crate) piece_masks: [u64; 12],
+    piece_masks: [u64; 12],
 }
 
 impl Position {
@@ -59,6 +60,24 @@ impl Position {
             ColoredPiece::BKnight => self.piece_masks[ColoredPiece::BKnight as usize],
             ColoredPiece::BQueen => self.piece_masks[ColoredPiece::BQueen as usize],
             ColoredPiece::None => self.empty_mask(),
+        }
+    }
+
+    pub fn mut_piece_mask(&mut self, piece: ColoredPiece) -> &mut u64 {
+        match piece {
+            ColoredPiece::WPawn => self.piece_masks[ColoredPiece::WPawn as usize].borrow_mut(),
+            ColoredPiece::WBishop => self.piece_masks[ColoredPiece::WBishop as usize].borrow_mut(),
+            ColoredPiece::WRook => self.piece_masks[ColoredPiece::WRook as usize].borrow_mut(),
+            ColoredPiece::WKing => self.piece_masks[ColoredPiece::WKing as usize].borrow_mut(),
+            ColoredPiece::WKnight => self.piece_masks[ColoredPiece::WKnight as usize].borrow_mut(),
+            ColoredPiece::WQueen => self.piece_masks[ColoredPiece::WQueen as usize].borrow_mut(),
+            ColoredPiece::BPawn => self.piece_masks[ColoredPiece::BPawn as usize].borrow_mut(),
+            ColoredPiece::BBishop => self.piece_masks[ColoredPiece::BBishop as usize].borrow_mut(),
+            ColoredPiece::BRook => self.piece_masks[ColoredPiece::BRook as usize].borrow_mut(),
+            ColoredPiece::BKing => self.piece_masks[ColoredPiece::BKing as usize].borrow_mut(),
+            ColoredPiece::BKnight => self.piece_masks[ColoredPiece::BKnight as usize].borrow_mut(),
+            ColoredPiece::BQueen => self.piece_masks[ColoredPiece::BQueen as usize].borrow_mut(),
+            ColoredPiece::None => panic!("Attempting to write to empty piece mask is not supported"),
         }
     }
 }
