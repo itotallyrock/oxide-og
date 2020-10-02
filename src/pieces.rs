@@ -57,7 +57,7 @@ impl Piece {
             Piece::Knight if side == Side::BLACK => ColoredPiece::BKnight,
             Piece::Queen if side == Side::WHITE => ColoredPiece::WQueen,
             Piece::Queen if side == Side::BLACK => ColoredPiece::BQueen,
-            Piece::None => ColoredPiece::None,
+            Piece::None => panic!("Cannot color none piece"),
             _ => panic!("Unknown side {} for coloring {} piece", side, self.to_ascii()),
         }
     }
@@ -214,7 +214,6 @@ mod tests {
         assert_eq!(ColoredPiece::WKing.uncolor(), Piece::King, "White king failed to uncolor");
         assert_eq!(ColoredPiece::WKnight.uncolor(), Piece::Knight, "White knight failed to uncolor");
         assert_eq!(ColoredPiece::WQueen.uncolor(), Piece::Queen, "White queen failed to uncolor");
-        assert_eq!(ColoredPiece::None.uncolor(), Piece::None, "Failed to uncolor none");
     }
 
     #[test]
@@ -225,7 +224,12 @@ mod tests {
         assert_eq!(ColoredPiece::BKing.uncolor(), Piece::King, "Black king failed to uncolor");
         assert_eq!(ColoredPiece::BKnight.uncolor(), Piece::Knight, "Black knight failed to uncolor");
         assert_eq!(ColoredPiece::BQueen.uncolor(), Piece::Queen, "Black queen failed to uncolor");
-        assert_eq!(ColoredPiece::None.uncolor(), Piece::None, "Failed to uncolor none");
+    }
+
+    #[should_panic]
+    #[test]
+    fn uncolor_none_panics() {
+        ColoredPiece::None.uncolor();
     }
 
     #[test]
@@ -236,7 +240,6 @@ mod tests {
         assert_eq!(Piece::King.color(Side::WHITE), ColoredPiece::WKing, "King failed to color white");
         assert_eq!(Piece::Knight.color(Side::WHITE), ColoredPiece::WKnight, "Knight failed to color white");
         assert_eq!(Piece::Queen.color(Side::WHITE), ColoredPiece::WQueen, "Queen failed to color white");
-        assert_eq!(Piece::None.color(Side::WHITE), ColoredPiece::None, "Failed to uncolor none");
     }
 
     #[test]
@@ -247,7 +250,18 @@ mod tests {
         assert_eq!(Piece::King.color(Side::BLACK), ColoredPiece::BKing, "King failed to color black");
         assert_eq!(Piece::Knight.color(Side::BLACK), ColoredPiece::BKnight, "Knight failed to color black");
         assert_eq!(Piece::Queen.color(Side::BLACK), ColoredPiece::BQueen, "Queen failed to color black");
-        assert_eq!(Piece::None.color(Side::BLACK), ColoredPiece::None, "Failed to uncolor none");
+    }
+
+    #[should_panic]
+    #[test]
+    fn color_none_white_panics() {
+        Piece::None.color(Side::WHITE);
+    }
+
+    #[should_panic]
+    #[test]
+    fn color_none_black_panics() {
+        Piece::None.color(Side::BLACK);
     }
 
     #[test]
