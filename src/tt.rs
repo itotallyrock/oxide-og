@@ -79,7 +79,8 @@ pub struct TranspositionEntry {
     best_move: ChessMove,
     #[cfg(feature = "low_memory")]
     compressed_best_move: CompressedChessMove,
-    // Plies from zero
+    // NOTE: We could combine plies from zero and depth into 1 variable by subtracting for just plies searched to potentially save memory
+    plies_from_zero: u8,
     depth: u8,
     score: ScoreType,
     node_type: PVType,
@@ -107,13 +108,14 @@ impl TranspositionEntry {
     pub fn node_type(&self) -> PVType {
         self.node_type
     }
-    pub fn new(key: u64, best_move: ChessMove, depth: u8, score: i32, node_type: PVType) -> Self {
+    pub fn new(key: u64, best_move: ChessMove, plies_from_zero: u8, depth: u8, score: i32, node_type: PVType) -> Self {
         Self {
             key,
             #[cfg(not(feature = "low_memory"))]
             best_move,
             #[cfg(feature = "low_memory")]
             compressed_best_move: best_move.compress(),
+            plies_from_zero,
             depth,
             score,
             node_type,
