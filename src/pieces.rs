@@ -57,7 +57,7 @@ impl Piece {
             Piece::Knight if side == Side::BLACK => ColoredPiece::BKnight,
             Piece::Queen if side == Side::WHITE => ColoredPiece::WQueen,
             Piece::Queen if side == Side::BLACK => ColoredPiece::BQueen,
-            Piece::None => panic!("Cannot color none piece"),
+            Piece::None => ColoredPiece::None,
             _ => panic!("Unknown side {} for coloring {} piece", side, self.to_ascii()),
         }
     }
@@ -82,7 +82,7 @@ impl ColoredPiece {
             ColoredPiece::WKing | ColoredPiece::BKing => Piece::King,
             ColoredPiece::WKnight | ColoredPiece::BKnight => Piece::Knight,
             ColoredPiece::WQueen | ColoredPiece::BQueen => Piece::Queen,
-            ColoredPiece::None => panic!("Attempting to uncolor None piece"),
+            ColoredPiece::None => Piece::None,
         }
     }
 }
@@ -226,10 +226,9 @@ mod tests {
         assert_eq!(ColoredPiece::BQueen.uncolor(), Piece::Queen, "Black queen failed to uncolor");
     }
 
-    #[should_panic]
     #[test]
-    fn uncolor_none_panics() {
-        ColoredPiece::None.uncolor();
+    fn uncolor_none_works() {
+        assert_eq!(ColoredPiece::None.uncolor(), Piece::None);
     }
 
     #[test]
@@ -252,16 +251,14 @@ mod tests {
         assert_eq!(Piece::Queen.color(Side::BLACK), ColoredPiece::BQueen, "Queen failed to color black");
     }
 
-    #[should_panic]
     #[test]
-    fn color_none_white_panics() {
-        Piece::None.color(Side::WHITE);
+    fn color_none_white_works() {
+        assert_eq!(Piece::None.color(Side::WHITE), ColoredPiece::None);
     }
 
-    #[should_panic]
     #[test]
-    fn color_none_black_panics() {
-        Piece::None.color(Side::BLACK);
+    fn color_none_black_works() {
+        assert_eq!(Piece::None.color(Side::BLACK), ColoredPiece::None);
     }
 
     #[test]
@@ -302,6 +299,28 @@ mod tests {
         assert_eq!(ColoredPiece::BKing.to_ascii(), 'k', "Failed to get correct ascii representation for black king");
         assert_eq!(ColoredPiece::BKnight.to_ascii(), 'n', "Failed to get correct ascii representation for black knight");
         assert_eq!(ColoredPiece::BQueen.to_ascii(), 'q', "Failed to get correct ascii representation for black queen");
+    }
+
+    #[test]
+    fn side_works() {
+        assert_eq!(ColoredPiece::WPawn.side(), Side::WHITE, "Failed to get correct side for white pawn");
+        assert_eq!(ColoredPiece::BPawn.side(), Side::BLACK, "Failed to get correct side for black pawn");
+        assert_eq!(ColoredPiece::WKnight.side(), Side::WHITE, "Failed to get correct side for white knight");
+        assert_eq!(ColoredPiece::BKnight.side(), Side::BLACK, "Failed to get correct side for black knight");
+        assert_eq!(ColoredPiece::WRook.side(), Side::WHITE, "Failed to get correct side for white rook");
+        assert_eq!(ColoredPiece::BRook.side(), Side::BLACK, "Failed to get correct side for black rook");
+        assert_eq!(ColoredPiece::WBishop.side(), Side::WHITE, "Failed to get correct side for white bishop");
+        assert_eq!(ColoredPiece::BBishop.side(), Side::BLACK, "Failed to get correct side for black bishop");
+        assert_eq!(ColoredPiece::WQueen.side(), Side::WHITE, "Failed to get correct side for white queen");
+        assert_eq!(ColoredPiece::BQueen.side(), Side::BLACK, "Failed to get correct side for black queen");
+        assert_eq!(ColoredPiece::WKing.side(), Side::WHITE, "Failed to get correct side for white king");
+        assert_eq!(ColoredPiece::BKing.side(), Side::BLACK, "Failed to get correct side for black king");
+    }
+
+    #[should_panic]
+    #[test]
+    fn side_none_panics() {
+        ColoredPiece::None.side();
     }
 }
 
