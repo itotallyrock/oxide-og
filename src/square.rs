@@ -176,17 +176,17 @@ impl Square {
     }
     // Get the zero-based (A File=0) x offset
     #[inline]
-    pub fn x(self) -> u8 {
+    pub const fn x(self) -> u8 {
         self.0 % 8u8
     }
     // Get the zero-based (Rank 1=0) y offset
     #[inline]
-    pub fn y(self) -> u8 {
+    pub const fn y(self) -> u8 {
         self.0 / 8u8
     }
     // Get a bit mask for only this square
     #[inline]
-    pub fn mask(self) -> u64 {
+    pub const fn mask(self) -> u64 {
         1u64 << self.0 as u64
     }
     // Get the offset of the square
