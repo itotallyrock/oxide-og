@@ -1,0 +1,43 @@
+[package]
+name = "oxide"
+version = "0.2.0"
+authors = ["Jeffrey Meyer <itotallyrock>"]
+edition = "2018"
+description = "Oxide an attempt at a rust chess engine"
+keywords = ["chess", "engine"]
+license = "MIT"
+
+[features]
+# Default encompasses a number of features below
+default = ["simplelog"]
+# Add logging to a file (useful to have in most builds, but can be disabled)
+logging = ["simplelog"]
+# Avoid large tables instead try computing most values on the fly
+low_memory = []
+# Bundles the parsed openings file at compilation
+openings = [] # TODO: Depend on pgn parser for reading openings (unless we make our own again)
+# Bundle endgame base for 5 man and maybe allow config for reading at runtime up to 8 man
+#endgames = ["fprobe or shakmaty-syzygy"] # TODO
+# Reads weights from weights file at runtime instead of compile time constants
+tuning = []
+# Support doing multiple position operations at a time using SIMD
+#simd_position = [] # NOTE: Maybe use target_arch/feature instead of a feature
+# Neural network evaluation function
+#nn_eval = []
+# Future features that might just be always included (unless there is a downside to them)
+#move_ordering = [] # TODO
+#qsearch = [] # TODO
+
+
+[dependencies]
+lazy_static = "1.4"
+bitintr = "0.3.0"
+nom = "5"
+nom_locate = "2.0.0"
+# packed_simd = "0.3.3"
+static_assertions = "1.1.0"
+log = "0.4.11"
+simplelog = { version = "0.8.0", optional = true }
+
+[dev-dependencies]
+
