@@ -107,8 +107,9 @@ pub const fn castle_key(castle_rights: CastlePermissions) -> u64 {
         CastlePermissions::BLACK_QUEEN => CASTLE_KEYS[3],
         CastlePermissions::BLACK_ALL => CASTLE_KEYS[1] ^ CASTLE_KEYS[3],
         CastlePermissions::ALL => CASTLE_KEYS[0] ^ CASTLE_KEYS[1] ^ CASTLE_KEYS[2] ^ CASTLE_KEYS[3],
+        CastlePermissions::NONE => 0,
         // Only support castle rights that can be changed in a single move
-        _ => panic!("unsupported castle right for castle zobrist key"),
+        _ => panic!("unsupported castle rights for castle zobrist key"),
     }
 }
 /// Get the en passant zobrist key for any given square

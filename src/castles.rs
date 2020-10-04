@@ -1,6 +1,7 @@
 
 // Std imports
 use std::fmt::{Display, Formatter, Result as FormatResult};
+use std::ops::{BitAnd, Not, BitXor};
 
 // This was an enum, but I've found that using a u8 and bit operations is faster and safer this way
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -37,6 +38,30 @@ impl CastlePermissions {
     }
     pub fn intersects(&self, other: Self) -> bool {
         self.0 & other.0 > 0
+    }
+}
+
+impl BitAnd for CastlePermissions {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl Not for CastlePermissions {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self(!self.0)
+    }
+}
+
+impl BitXor for CastlePermissions {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 ^ rhs.0)
     }
 }
 
