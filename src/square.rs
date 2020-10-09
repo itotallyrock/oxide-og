@@ -4,6 +4,8 @@ use named::*;
 // Std imports
 use std::ops::{Add, Sub};
 use std::fmt::{Display, Result as FormatResult, Formatter};
+// External imports
+use bitintr::Blsr;
 
 // Square char representation
 const FILE_CHARS: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -174,6 +176,13 @@ impl Square {
 
         Self(offset)
     }
+    // Create a square safely from a mask
+    #[inline]
+    pub fn from_mask(mask: u64) -> Self {
+        debug_assert!(mask.count_ones() == 1, "Creating a square from a mask with multiple squares set");
+        let trailing_zeros = mask.trailing_zeros();
+        Self::new(trailing_zeros as u8)
+    }
     // Get the zero-based (A File=0) x offset
     #[inline]
     pub const fn x(self) -> u8 {
@@ -227,6 +236,19 @@ impl Sub<i8> for Square {
 
         difference
     }
+}
+
+pub(crate) fn mask_to_square_iter(mut mask: u64) -> impl Iterator<Item=Square> {
+    let mut squares = Vec::new();
+
+    while mask > 0 {
+        let offset = mask.trailing_zeros();
+        let square = Square::new(offset as u8);
+        squares.push(square);
+        mask = mask.blsr();
+    }
+
+    squares.into_iter()
 }
 
 #[cfg(test)]
