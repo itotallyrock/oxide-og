@@ -1,6 +1,7 @@
 
 // Local imports
 use crate::side::Side;
+use std::fmt::{Display, Formatter, Result as FormatResult};
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Debug)]
 #[repr(u8)]
@@ -58,7 +59,18 @@ impl Piece {
             Piece::Queen if side == Side::WHITE => ColoredPiece::WQueen,
             Piece::Queen if side == Side::BLACK => ColoredPiece::BQueen,
             Piece::None => ColoredPiece::None,
-            _ => panic!("Unknown side {} for coloring {} piece", side, self.to_ascii()),
+            _ => panic!("Unknown side {} for coloring {} piece", side, self),
+        }
+    }
+    pub const fn to_ascii(self) -> char {
+        match self {
+            Piece::Pawn => 'p',
+            Piece::Bishop => 'b',
+            Piece::Rook => 'r',
+            Piece::King => 'k',
+            Piece::Knight => 'n',
+            Piece::Queen => 'q',
+            Piece::None => '.'
         }
     }
 }
@@ -66,7 +78,7 @@ impl Piece {
 impl ColoredPiece {
     pub const COUNT: usize = 12;
     /// Get the side of a colored piece
-    pub fn side(self) -> Side {
+    pub const fn side(self) -> Side {
         match self {
             ColoredPiece::WPawn | ColoredPiece::WBishop | ColoredPiece::WRook | ColoredPiece::WKing | ColoredPiece::WKnight | ColoredPiece::WQueen => Side::WHITE,
             ColoredPiece::BPawn | ColoredPiece::BBishop | ColoredPiece::BRook | ColoredPiece::BKing | ColoredPiece::BKnight | ColoredPiece::BQueen => Side::BLACK,
@@ -74,7 +86,7 @@ impl ColoredPiece {
         }
     }
     /// Remove ownership of a piece getting just its type
-    pub fn uncolor(self) -> Piece {
+    pub const fn uncolor(self) -> Piece {
         match self {
             ColoredPiece::WPawn | ColoredPiece::BPawn => Piece::Pawn,
             ColoredPiece::WBishop | ColoredPiece::BBishop => Piece::Bishop,
@@ -83,6 +95,24 @@ impl ColoredPiece {
             ColoredPiece::WKnight | ColoredPiece::BKnight => Piece::Knight,
             ColoredPiece::WQueen | ColoredPiece::BQueen => Piece::Queen,
             ColoredPiece::None => Piece::None,
+        }
+    }
+
+    pub const fn to_ascii(self) -> char {
+        match self {
+            ColoredPiece::WPawn => 'P',
+            ColoredPiece::BPawn => 'p',
+            ColoredPiece::WBishop => 'B',
+            ColoredPiece::BBishop => 'b',
+            ColoredPiece::WRook => 'R',
+            ColoredPiece::BRook => 'r',
+            ColoredPiece::WKing => 'K',
+            ColoredPiece::BKing => 'k',
+            ColoredPiece::WKnight => 'N',
+            ColoredPiece::BKnight => 'n',
+            ColoredPiece::WQueen => 'Q',
+            ColoredPiece::BQueen => 'q',
+            ColoredPiece::None => '.'
         }
     }
 }
@@ -126,79 +156,15 @@ impl From<char> for Piece {
     }
 }
 
-/// Used to get character representation of a piece
-pub trait PieceRepr {
-    /// Get standard 256 ascii character
-    fn to_ascii(&self) -> char;
-    /// Get the full unicode representation (falls back to ascii)
-    fn to_unicode(&self) -> char {
-        self.to_ascii()
+impl Display for Piece {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FormatResult {
+        write!(f, "{}", self.to_ascii())
     }
 }
 
-impl PieceRepr for Piece {
-    /// Gets the ascii character for the piece (always lower case)
-    fn to_ascii(&self) -> char {
-        match self {
-            Piece::Pawn => 'p',
-            Piece::Bishop => 'b',
-            Piece::Rook => 'r',
-            Piece::King => 'k',
-            Piece::Knight => 'n',
-            Piece::Queen => 'q',
-            Piece::None => '.'
-        }
-    }
-    /// Get the [unicode chess symbols](https://en.wikipedia.org/wiki/Chess_symbols_in_Unicode) (always black)
-    fn to_unicode(&self) -> char {
-        match self {
-            Piece::Pawn => '\u{265F}',
-            Piece::Bishop => '\u{265D}',
-            Piece::Rook => '\u{265C}',
-            Piece::King => '\u{265A}',
-            Piece::Knight => '\u{265E}',
-            Piece::Queen => '\u{265B}',
-            Piece::None => ' '
-        }
-    }
-}
-
-impl PieceRepr for ColoredPiece {
-    /// Gets the ascii character for the piece (white uppercase)
-    fn to_ascii(&self) -> char {
-        match self {
-            ColoredPiece::WPawn => 'P',
-            ColoredPiece::BPawn => 'p',
-            ColoredPiece::WBishop => 'B',
-            ColoredPiece::BBishop => 'b',
-            ColoredPiece::WRook => 'R',
-            ColoredPiece::BRook => 'r',
-            ColoredPiece::WKing => 'K',
-            ColoredPiece::BKing => 'k',
-            ColoredPiece::WKnight => 'N',
-            ColoredPiece::BKnight => 'n',
-            ColoredPiece::WQueen => 'Q',
-            ColoredPiece::BQueen => 'q',
-            ColoredPiece::None => '.'
-        }
-    }
-    /// Get the [unicode chess symbols](https://en.wikipedia.org/wiki/Chess_symbols_in_Unicode)
-    fn to_unicode(&self) -> char {
-        match self {
-            ColoredPiece::WPawn => '\u{2659}',
-            ColoredPiece::BPawn => '\u{265F}',
-            ColoredPiece::WBishop => '\u{2657}',
-            ColoredPiece::BBishop => '\u{265D}',
-            ColoredPiece::WRook => '\u{2656}',
-            ColoredPiece::BRook => '\u{265C}',
-            ColoredPiece::WKing => '\u{2654}',
-            ColoredPiece::BKing => '\u{265A}',
-            ColoredPiece::WKnight => '\u{2658}',
-            ColoredPiece::BKnight => '\u{265E}',
-            ColoredPiece::WQueen => '\u{2655}',
-            ColoredPiece::BQueen => '\u{265B}',
-            ColoredPiece::None => ' '
-        }
+impl Display for ColoredPiece {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FormatResult {
+        write!(f, "{}", self.to_ascii())
     }
 }
 
