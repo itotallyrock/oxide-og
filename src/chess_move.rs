@@ -43,20 +43,15 @@ impl Flags {
     }
     pub(crate) fn add_capture(self) -> Self {
         match self {
-            Flags::Quiet => Flags::Capture,
-            Flags::DoublePawnPush => panic!("cannot add capture to double pawn push"),
-            Flags::KingSideCastle => panic!("cannot add capture to king side castle"),
-            Flags::QueenSideCastle => panic!("cannot add capture to queen side castle"),
-            Flags::Capture => panic!("cannot add capture to capture"),
-            Flags::EnPassantCapture => panic!("cannot add capture to en passant capture"),
-            Flags::KnightPromotion => Flags::KnightPromotingCapture,
-            Flags::BishopPromotion => Flags::BishopPromotingCapture,
-            Flags::RookPromotion => Flags::RookPromotingCapture,
-            Flags::QueenPromotion => Flags::QueenPromotingCapture,
-            Flags::KnightPromotingCapture => panic!("cannot add capture to knight promoting capture"),
-            Flags::BishopPromotingCapture => panic!("cannot add capture to bishop promoting capture"),
-            Flags::RookPromotingCapture => panic!("cannot add capture to rook promoting capture"),
-            Flags::QueenPromotingCapture => panic!("cannot add capture to queen promoting capture"),
+            Flags::Quiet | Flags::Capture => Flags::Capture,
+            Flags::DoublePawnPush   => panic!("cannot add capture to double pawn push"),
+            Flags::KingSideCastle   => panic!("cannot add capture to king side castle"),
+            Flags::QueenSideCastle  => panic!("cannot add capture to queen side castle"),
+            Flags::EnPassantCapture => Flags::EnPassantCapture,
+            Flags::KnightPromotion  | Flags::KnightPromotingCapture => Flags::KnightPromotingCapture,
+            Flags::BishopPromotion  | Flags::BishopPromotingCapture => Flags::BishopPromotingCapture,
+            Flags::RookPromotion    | Flags::RookPromotingCapture   => Flags::RookPromotingCapture,
+            Flags::QueenPromotion   | Flags::QueenPromotingCapture  => Flags::QueenPromotingCapture,
         }
     }
 }
