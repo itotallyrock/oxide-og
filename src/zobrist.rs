@@ -1,3 +1,5 @@
+
+// Local imports
 use crate::castles::CastlePermissions;
 use crate::pieces::{Piece, ColoredPiece};
 use crate::side::Side;
@@ -108,23 +110,30 @@ pub const fn castle_key(castle_rights: CastlePermissions) -> u64 {
         CastlePermissions::BLACK_ALL => CASTLE_KEYS[1] ^ CASTLE_KEYS[3],
         CastlePermissions::ALL => CASTLE_KEYS[0] ^ CASTLE_KEYS[1] ^ CASTLE_KEYS[2] ^ CASTLE_KEYS[3],
         CastlePermissions::NONE => 0,
-        // Only support castle rights that can be changed in a single move
+        CastlePermissions::WHITE_ALL_BLACK_KING => CASTLE_KEYS[0] ^ CASTLE_KEYS[2] ^ CASTLE_KEYS[1],
+        CastlePermissions::WHITE_ALL_BLACK_QUEEN => CASTLE_KEYS[0] ^ CASTLE_KEYS[2] ^ CASTLE_KEYS[3],
+        CastlePermissions::BLACK_ALL_WHITE_KING => CASTLE_KEYS[1] ^ CASTLE_KEYS[3] ^ CASTLE_KEYS[0],
+        CastlePermissions::BLACK_ALL_WHITE_QUEEN => CASTLE_KEYS[1] ^ CASTLE_KEYS[3] ^ CASTLE_KEYS[2],
+        CastlePermissions::BOTH_KINGS => CASTLE_KEYS[0] ^ CASTLE_KEYS[1],
+        CastlePermissions::BOTH_QUEENS => CASTLE_KEYS[2] ^ CASTLE_KEYS[3],
+        CastlePermissions::WHITE_KING_BLACK_QUEEN => CASTLE_KEYS[0] ^ CASTLE_KEYS[3],
+        CastlePermissions::WHITE_QUEEN_BLACK_KING => CASTLE_KEYS[2] ^ CASTLE_KEYS[1],
+        // Unreachable panic
         _ => panic!("unsupported castle rights for castle zobrist key"),
     }
 }
 /// Get the en passant zobrist key for any given square
 pub const fn en_passant_key(square: Square) -> u64 {
     debug_assert!(square.offset() < 64, "Square with offset > 64 for en passant key");
-    debug_assert!(square.y() == 2 || square.y() == 5, "Attempting to get zobrist for illegal en-passant square");
-    EN_PASSANT_KEYS[(square.offset() / 24 + square.x()) as usize]
+    assert!(square.y() == 2 || square.y() == 5, "Attempting to get zobrist for illegal en-passant square");
+    EN_PASSANT_KEYS[(((square.offset() / 24) * 8) + square.x()) as usize]
 }
 
-// As of 9-18-2020 this compiles to 0xE12C629BAA7CDB7E
 /// Default (startpos) zobrist key
 pub const fn default_position_key() -> u64 {
     let mut key = BASE_KEY;
     // Add castles
-    key ^= castle_key(CastlePermissions::WHITE_ALL) ^ castle_key(CastlePermissions::BLACK_ALL);
+    key ^= castle_key(CastlePermissions::ALL);
     // Add white pawns
     key ^= piece_key(Piece::Pawn, Side::WHITE, A2);
     key ^= piece_key(Piece::Pawn, Side::WHITE, B2);
@@ -150,11 +159,11 @@ pub const fn default_position_key() -> u64 {
     key ^= piece_key(Piece::Rook, Side::BLACK, H8);
     key ^= piece_key(Piece::Rook, Side::BLACK, A8);
     // Add white knight
-    key ^= piece_key(Piece::Bishop, Side::WHITE, B1);
-    key ^= piece_key(Piece::Bishop, Side::WHITE, G1);
+    key ^= piece_key(Piece::Knight, Side::WHITE, B1);
+    key ^= piece_key(Piece::Knight, Side::WHITE, G1);
     // Add black knight
-    key ^= piece_key(Piece::Bishop, Side::BLACK, B8);
-    key ^= piece_key(Piece::Bishop, Side::BLACK, G8);
+    key ^= piece_key(Piece::Knight, Side::BLACK, B8);
+    key ^= piece_key(Piece::Knight, Side::BLACK, G8);
     // Add white bishops
     key ^= piece_key(Piece::Bishop, Side::WHITE, C1);
     key ^= piece_key(Piece::Bishop, Side::WHITE, F1);
@@ -201,9 +210,84 @@ pub const fn default_position_pawn_key() -> u64 {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::collections::BTreeSet;
+    use crate::square::SQUARES;
+    use crate::uci::fen_parser;
+    use crate::tt::TRANSPOSITION_TABLE;
 
-    // TODO: Test en-passant keys work (they are all different)
-    // TODO: Test en-passant panics with invalid location
+    #[should_panic]
+    #[test]
+    fn en_passant_key_panics_invalid_square() {
+        en_passant_key(A2);
+    }
+
+    #[test]
+    fn en_passant_keys_all_unique() {
+        let mut used = BTreeSet::new();
+        for &square in [A3, B3, C3, D3, E3, F3, G3, H3, A6, B6, C6, D6, E6, F6, G6, H6].iter() {
+            let key = en_passant_key(square);
+            assert!(!used.contains(&key), "En passant key for {} is not unique with key = {:#X}", square, key);
+            used.insert(key);
+        }
+    }
+
+    #[test]
+    fn castle_keys_all_unique() {
+        let mut used = BTreeSet::new();
+        for &rights in [CastlePermissions::WHITE_KING, CastlePermissions::WHITE_QUEEN, CastlePermissions::WHITE_ALL, CastlePermissions::BLACK_KING, CastlePermissions::BLACK_QUEEN, CastlePermissions::BLACK_ALL, CastlePermissions::ALL, CastlePermissions::NONE].iter() {
+            let key = castle_key(rights);
+            assert!(!used.contains(&key), "Castle key for {} is not unique with key = {:#X}", rights, key);
+            used.insert(key);
+        }
+    }
+
+    #[test]
+    fn piece_keys_all_unique() {
+        let mut used = BTreeSet::new();
+        for &square in SQUARES.iter() {
+            for &piece in [Piece::Pawn, Piece::Rook, Piece::Knight, Piece::Bishop, Piece::Queen, Piece::King].iter() {
+                for &side in [Side::WHITE, Side::BLACK].iter() {
+                    let key = piece_key(piece, side, square);
+                    assert!(!used.contains(&key), "Piece key for {}{} on {} is not unique with key = {:#X}", side, piece, square, key);
+                    used.insert(key);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn default_position_key_matches_default_fen_key() {
+        let board = fen_parser("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+        assert_eq!(default_position_key(), board.state().key(), "Default position doesn't have the same key as default FEN");
+    }
+
+    #[test]
+    fn all_keys_arent_divisible_by_tt_size() {
+        // test that each zobrist hash isn't modulo TT_SIZE == 0
+        let tt_size = TRANSPOSITION_TABLE.read().expect("thread panicked").capacity() as u64;
+        // Base key isn't divisible
+        assert_ne!(BASE_KEY % tt_size, 0);
+        // Base pawn key isn't
+        #[cfg(not(feature = "low_memory"))] {
+            assert_ne!(BASE_KEY % tt_size, 0);
+        }
+        // Each piece key isn't either
+        for &square in SQUARES.iter() {
+            for &piece in [Piece::Pawn, Piece::Rook, Piece::Knight, Piece::Bishop, Piece::Queen, Piece::King].iter() {
+                for &side in [Side::WHITE, Side::BLACK].iter() {
+                    assert_ne!(piece_key(piece, side, square) % tt_size, 0);
+                }
+            }
+        }
+        // All castle rights aren't (except none since that is zero)
+        for &rights in [CastlePermissions::WHITE_KING, CastlePermissions::WHITE_QUEEN, CastlePermissions::WHITE_ALL, CastlePermissions::BLACK_KING, CastlePermissions::BLACK_QUEEN, CastlePermissions::BLACK_ALL, CastlePermissions::ALL].iter() {
+            assert_ne!(castle_key(rights) % tt_size, 0);
+        }
+        // All en passant squares aren't
+        for &square in [A3, B3, C3, D3, E3, F3, G3, H3, A6, B6, C6, D6, E6, F6, G6, H6].iter() {
+            assert_ne!(en_passant_key(square) % tt_size, 0);
+        }
+    }
 
     // TODO: Test zobrist hash works as expected in a number of scenarios
 
