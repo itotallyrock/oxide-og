@@ -25,8 +25,16 @@ fn get_log_file() -> File {
 pub fn init_logging() {
     let file = get_log_file();
 
-    let result = WriteLogger::init(LevelFilter::Trace, Config::default(), file);
-    if result.is_err() {
-        panic!("Failed to create log instance: {}", result.err().unwrap());
+    #[cfg(debug_assertions)] {
+        let result = WriteLogger::init(LevelFilter::Trace, Config::default(), file);
+        if result.is_err() {
+            panic!("Failed to create log instance: {}", result.err().unwrap());
+        }
+    }
+    #[cfg(not(debug_assertions))] {
+        let result = WriteLogger::init(LevelFilter::Info, Config::default(), file);
+        if result.is_err() {
+            panic!("Failed to create log instance: {}", result.err().unwrap());
+        }
     }
 }
