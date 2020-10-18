@@ -25,6 +25,8 @@ pub const SQUARES: [Square; 64] = [
 
 // Bitboard masks
 pub mod masks {
+    use crate::side::Side;
+
     // Files
     pub const A_FILE: u64 = 0x0101010101010101;
     pub const B_FILE: u64 = 0x0202020202020202;
@@ -65,7 +67,30 @@ pub mod masks {
             5 => F_FILE,
             6 => G_FILE,
             7 => H_FILE,
-            _ => 0,
+            _ => unreachable!(),
+        }
+    }
+
+    #[inline]
+    pub fn rank_for_y(y: u8) -> u64 {
+        match y {
+            0 => RANK_1,
+            1 => RANK_2,
+            2 => RANK_3,
+            3 => RANK_4,
+            4 => RANK_5,
+            5 => RANK_6,
+            6 => RANK_7,
+            7 => RANK_8,
+            _ => unreachable!(),
+        }
+    }
+
+    #[inline]
+    pub fn relative_rank(y: u8, side: Side) -> u64 {
+        match side {
+            Side::WHITE => rank_for_y(y),
+            Side::BLACK => rank_for_y(7 - y),
         }
     }
 
