@@ -13,7 +13,7 @@ impl Side {
     // Since only 2 sides exist use
     pub const COUNT: usize = 2;
     #[inline]
-    pub fn opposite(&self) -> Self {
+    pub const fn opposite(&self) -> Self {
         Self(!self.0)
     }
 }
