@@ -8,9 +8,7 @@ use crate::eval::ScoreType;
 #[cfg(not(feature = "low_memory"))]
 use std::time::Duration;
 use std::time::Instant;
-use std::collections::HashMap;
 use std::sync::RwLock;
-use std::ops::Index;
 // External imports
 use lazy_static::*;
 use log::{trace, warn};
