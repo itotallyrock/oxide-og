@@ -24,6 +24,8 @@ pub trait Bitboard {
     fn north_east_fill(self) -> Self;
     fn south_west_fill(self) -> Self;
     fn south_east_fill(self) -> Self;
+    fn cardinal_fill(self) -> Self;
+    fn diagonal_fill(self) -> Self;
     // Occluded Fills
     fn south_occluded_fill(self, empty: Self) -> Self;
     fn north_occluded_fill(self, empty: Self) -> Self;
@@ -89,7 +91,7 @@ macro_rules! right_fill_occluded_mask {
     };
 }
 
-impl Bitboard for u64 {
+impl const Bitboard for u64 {
     // Shifts
     fn north_shift(self) -> Self {
         self << 8
@@ -184,6 +186,15 @@ impl Bitboard for u64 {
 
         self
     }
+    #[inline]
+    fn cardinal_fill(self) -> Self {
+        self.north_fill() | self.south_fill() | self.east_fill() | self.west_fill()
+    }
+    #[inline]
+    fn diagonal_fill(self) -> Self {
+        self.north_east_fill() | self.north_west_fill() | self.south_east_fill() | self.south_west_fill()
+    }
+    // Occluded fills
     #[inline]
     fn south_occluded_fill(mut self, mut empty: Self) -> Self {
         right_fill_occluded_mask!(self, empty, ALL, 8);

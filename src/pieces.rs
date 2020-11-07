@@ -44,22 +44,15 @@ impl Default for ColoredPiece {
 impl Piece {
     pub const COUNT: usize = 6;
     /// Color the regular piece so it belongs to a side
-    pub fn color(self, side: Side) -> ColoredPiece {
+    pub const fn color(self, side: Side) -> ColoredPiece {
         match self {
-            Piece::Pawn if side == Side::WHITE => ColoredPiece::WPawn,
-            Piece::Pawn if side == Side::BLACK => ColoredPiece::BPawn,
-            Piece::Bishop if side == Side::WHITE => ColoredPiece::WBishop,
-            Piece::Bishop if side == Side::BLACK => ColoredPiece::BBishop,
-            Piece::Rook if side == Side::WHITE => ColoredPiece::WRook,
-            Piece::Rook if side == Side::BLACK => ColoredPiece::BRook,
-            Piece::King if side == Side::WHITE => ColoredPiece::WKing,
-            Piece::King if side == Side::BLACK => ColoredPiece::BKing,
-            Piece::Knight if side == Side::WHITE => ColoredPiece::WKnight,
-            Piece::Knight if side == Side::BLACK => ColoredPiece::BKnight,
-            Piece::Queen if side == Side::WHITE => ColoredPiece::WQueen,
-            Piece::Queen if side == Side::BLACK => ColoredPiece::BQueen,
+            Piece::Pawn => match side { Side::WHITE => ColoredPiece::WPawn, _ => ColoredPiece::BPawn },
+            Piece::Bishop => match side { Side::WHITE => ColoredPiece::WBishop, _ => ColoredPiece::BBishop },
+            Piece::Rook => match side { Side::WHITE => ColoredPiece::WRook, _ => ColoredPiece::BRook },
+            Piece::King => match side { Side::WHITE => ColoredPiece::WKing, _ => ColoredPiece::BKing },
+            Piece::Knight => match side { Side::WHITE => ColoredPiece::WKnight, _ => ColoredPiece::BKnight },
+            Piece::Queen => match side { Side::WHITE => ColoredPiece::WQueen, _ => ColoredPiece::BQueen },
             Piece::None => ColoredPiece::None,
-            _ => panic!("Unknown side {} for coloring {} piece", side, self),
         }
     }
     pub const fn to_ascii(self) -> char {

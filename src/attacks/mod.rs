@@ -12,12 +12,10 @@ mod knight;
 mod pawn;
 
 // Re-export attack getters
-pub use sliding::bishop_attacks;
-pub use sliding::rook_attacks;
-pub use sliding::queen_attacks;
+pub use sliding::{bishop_attacks, rook_attacks, queen_attacks};
 pub use king::king_attacks;
 pub use knight::knight_attacks;
-pub use pawn::pawn_attacks;
+pub use pawn::{pawn_attacks, pawn_pushes};
 
 pub fn pseudo_attacks(piece: Piece, from_square: Square, occupied: u64) -> u64 {
     match piece {

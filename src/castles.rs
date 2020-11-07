@@ -27,21 +27,47 @@ impl CastlePermissions {
     pub const ALL: CastlePermissions = CastlePermissions(15);
     pub const COUNT: usize = 16;
 
-    pub fn contains(&self, other: Self) -> bool {
+    pub const fn contains(&self, other: Self) -> bool {
         self.0 & other.0 == other.0
     }
-    pub fn remove(&mut self, other: Self) {
+    pub const fn remove(&mut self, other: Self) {
         self.0 &= !other.0;
     }
-    pub fn insert(&mut self, other: Self) {
+    pub const fn insert(&mut self, other: Self) {
         self.0 |= other.0;
     }
-    pub fn intersects(&self, other: Self) -> bool {
+    pub const fn intersects(&self, other: Self) -> bool {
         self.0 & other.0 > 0
+    }
+
+    pub const fn required_clear_mask(&self) -> u64 {
+        const WHITE_KING_CLEAR: u64 = 0x60;
+        const WHITE_QUEEN_CLEAR: u64 = 0xe;
+        const BLACK_KING_CLEAR: u64 = 0x6000000000000000;
+        const BLACK_QUEEN_CLEAR: u64 = 0xe00000000000000;
+        match *self {
+            CastlePermissions::NONE => 0,
+            CastlePermissions::WHITE_KING => WHITE_KING_CLEAR,
+            CastlePermissions::WHITE_QUEEN => WHITE_QUEEN_CLEAR,
+            CastlePermissions::WHITE_ALL => WHITE_KING_CLEAR | WHITE_QUEEN_CLEAR,
+            CastlePermissions::BLACK_KING => BLACK_KING_CLEAR,
+            CastlePermissions::BOTH_KINGS => WHITE_KING_CLEAR | BLACK_KING_CLEAR,
+            CastlePermissions::WHITE_QUEEN_BLACK_KING => WHITE_QUEEN_CLEAR | BLACK_KING_CLEAR,
+            CastlePermissions::WHITE_ALL_BLACK_KING => WHITE_QUEEN_CLEAR | WHITE_KING_CLEAR | BLACK_KING_CLEAR,
+            CastlePermissions::BLACK_QUEEN => BLACK_QUEEN_CLEAR,
+            CastlePermissions::WHITE_KING_BLACK_QUEEN => WHITE_KING_CLEAR | BLACK_QUEEN_CLEAR,
+            CastlePermissions::BOTH_QUEENS => WHITE_QUEEN_CLEAR | BLACK_QUEEN_CLEAR,
+            CastlePermissions::WHITE_ALL_BLACK_QUEEN => WHITE_QUEEN_CLEAR | WHITE_KING_CLEAR | BLACK_QUEEN_CLEAR,
+            CastlePermissions::BLACK_ALL => BLACK_QUEEN_CLEAR | BLACK_KING_CLEAR,
+            CastlePermissions::BLACK_ALL_WHITE_KING => BLACK_QUEEN_CLEAR | BLACK_KING_CLEAR | WHITE_KING_CLEAR,
+            CastlePermissions::BLACK_ALL_WHITE_QUEEN => BLACK_QUEEN_CLEAR | BLACK_KING_CLEAR | WHITE_QUEEN_CLEAR,
+            CastlePermissions::ALL => BLACK_QUEEN_CLEAR | BLACK_KING_CLEAR | WHITE_KING_CLEAR | WHITE_QUEEN_CLEAR,
+            _ => unreachable!(),
+        }
     }
 }
 
-impl BitAnd for CastlePermissions {
+impl const BitAnd for CastlePermissions {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
@@ -49,7 +75,7 @@ impl BitAnd for CastlePermissions {
     }
 }
 
-impl Not for CastlePermissions {
+impl const Not for CastlePermissions {
     type Output = Self;
 
     fn not(self) -> Self::Output {
@@ -57,7 +83,7 @@ impl Not for CastlePermissions {
     }
 }
 
-impl BitXor for CastlePermissions {
+impl const BitXor for CastlePermissions {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
@@ -65,7 +91,7 @@ impl BitXor for CastlePermissions {
     }
 }
 
-impl Default for CastlePermissions {
+impl const Default for CastlePermissions {
     fn default() -> Self {
         CastlePermissions::NONE
     }

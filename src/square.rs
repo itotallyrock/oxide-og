@@ -57,7 +57,7 @@ pub mod masks {
     pub const NOT_A_OR_B_FILE: u64 = !(A_FILE | B_FILE);
 
     #[inline]
-    pub fn file_for_x(x: u8) -> u64 {
+    pub const fn file_for_x(x: u8) -> u64 {
         match x {
             0 => A_FILE,
             1 => B_FILE,
@@ -67,12 +67,12 @@ pub mod masks {
             5 => F_FILE,
             6 => G_FILE,
             7 => H_FILE,
-            _ => unreachable!(),
+            _ => panic!("Invalid x for file must be between 0-7"),
         }
     }
 
     #[inline]
-    pub fn rank_for_y(y: u8) -> u64 {
+    pub const fn rank_for_y(y: u8) -> u64 {
         match y {
             0 => RANK_1,
             1 => RANK_2,
@@ -82,12 +82,12 @@ pub mod masks {
             5 => RANK_6,
             6 => RANK_7,
             7 => RANK_8,
-            _ => unreachable!(),
+            _ => panic!("Invalid y for rank must be between 0-7"),
         }
     }
 
     #[inline]
-    pub fn relative_rank(y: u8, side: Side) -> u64 {
+    pub const fn relative_rank(y: u8, side: Side) -> u64 {
         match side {
             Side::WHITE => rank_for_y(y),
             Side::BLACK => rank_for_y(7 - y),
@@ -201,12 +201,22 @@ impl Square {
 
         Self(offset)
     }
-    // Create a square safely from a mask
+    /// Create a square where you already know offset is [0..=63]
+    pub const fn new_unchecked(offset: u8) -> Self {
+        Self(offset)
+    }
+    /// Create a square safely from a mask (Still panics for now so not that safely)
     #[inline]
     pub fn from_mask(mask: u64) -> Self {
         debug_assert!(mask.count_ones() == 1, "Creating a square from a mask with multiple squares set");
         let trailing_zeros = mask.trailing_zeros();
         Self::new(trailing_zeros as u8)
+    }
+    /// Create a square from the least significant bit of mask for the offset.  Doesn't panic and creates illegal square (offset=64) if empty mask is given.
+    #[inline]
+    pub const fn from_mask_unchecked(mask: u64) -> Self {
+        let trailing_zeros = mask.trailing_zeros();
+        Self(trailing_zeros as u8)
     }
     // Get the zero-based (A File=0) x offset
     #[inline]
@@ -274,6 +284,18 @@ pub(crate) fn mask_to_square_iter(mut mask: u64) -> impl Iterator<Item=Square> {
     }
 
     squares.into_iter()
+}
+#[inline(always)]
+pub(crate) fn pop_square(mask: &mut u64) -> Option<Square> {
+    if *mask == 0 {
+        None
+    } else {
+        let offset = mask.trailing_zeros();
+        let square = Square(offset as u8);
+        *mask = mask.blsr();
+
+        Some(square)
+    }
 }
 
 #[cfg(test)]

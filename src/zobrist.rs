@@ -96,10 +96,12 @@ const PIECE_KEYS: [[u64; ColoredPiece::COUNT]; Square::COUNT] = [
 ];
 
 /// Get zobrist key for a side's piece on a given square
+#[inline]
 pub const fn piece_key(piece: Piece, side: Side, square: Square) -> u64 {
-    PIECE_KEYS[square.offset() as usize][piece as usize * 2 + usize::from(side)]
+    PIECE_KEYS[square.offset() as usize][piece.color(side) as usize]
 }
 /// Get zobrist key the 4 side's castle rights
+#[inline]
 pub const fn castle_key(castle_rights: CastlePermissions) -> u64 {
     match castle_rights {
         CastlePermissions::WHITE_KING => CASTLE_KEYS[0],
@@ -123,6 +125,7 @@ pub const fn castle_key(castle_rights: CastlePermissions) -> u64 {
     }
 }
 /// Get the en passant zobrist key for any given square
+#[inline]
 pub const fn en_passant_key(square: Square) -> u64 {
     debug_assert!(square.offset() < 64, "Square with offset > 64 for en passant key");
     assert!(square.y() == 2 || square.y() == 5, "Attempting to get zobrist for illegal en-passant square");
@@ -130,6 +133,7 @@ pub const fn en_passant_key(square: Square) -> u64 {
 }
 
 /// Default (startpos) zobrist key
+#[inline]
 pub const fn default_position_key() -> u64 {
     let mut key = BASE_KEY;
     // Add castles
@@ -183,6 +187,7 @@ pub const fn default_position_key() -> u64 {
 }
 
 /// Default position (startpos) pawn key
+#[inline]
 pub const fn default_position_pawn_key() -> u64 {
     let mut key = BASE_PAWN_KEY;
     // Add white pawns

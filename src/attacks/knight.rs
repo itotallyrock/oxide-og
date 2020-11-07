@@ -3,7 +3,7 @@
 use crate::square::masks::*;
 
 #[inline]
-pub fn knight_attacks(knight_mask: u64) -> u64 {
+pub const fn knight_attacks(knight_mask: u64) -> u64 {
     (((knight_mask << 15) | (knight_mask >> 17)) & !H_FILE)
         | (((knight_mask >> 15) | (knight_mask << 17)) & !A_FILE)
         | (((knight_mask << 6) | (knight_mask >> 10)) & !(G_FILE | H_FILE))
