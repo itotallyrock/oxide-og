@@ -29,9 +29,6 @@ pub const fn east_attacks(side: Side, from_mask: u64) -> u64 {
 
 #[inline]
 pub const fn pawn_attacks(side: Side, from_mask: u64) -> u64 {
-    match side {
-        Side::WHITE => Bitboard::north_east_shift(from_mask) | Bitboard::north_west_shift(from_mask),
-        _ => Bitboard::south_east_shift(from_mask) | Bitboard::south_west_shift(from_mask),
-    }
+    east_attacks(side, from_mask) | west_attacks(side, from_mask)
 }
 
