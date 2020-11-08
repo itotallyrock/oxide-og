@@ -267,9 +267,9 @@ mod test {
     }
 
     #[test]
-    fn all_keys_arent_divisible_by_tt_size() {
+    fn all_keys_arent_divisible_by_default_tt_size() {
         // test that each zobrist hash isn't modulo TT_SIZE == 0
-        let tt_size = TRANSPOSITION_TABLE.read().expect("thread panicked").capacity() as u64;
+        let tt_size = TT_DEFAULT_SIZE as u64;
         // Base key isn't divisible
         assert_ne!(BASE_KEY % tt_size, 0);
         // Base pawn key isn't
