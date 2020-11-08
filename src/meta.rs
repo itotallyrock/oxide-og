@@ -20,18 +20,27 @@ pub fn oxide_info() -> String {
     }
 
     // Print out enabled features
-    // Openings enabled
-    #[cfg(any(feature = "openings", feature = "default"))]
-        info.push_str(" + Openings");
-    // Logging enabled
-    #[cfg(any(feature = "logging", feature = "default"))]
-        info.push_str(" + Logging");
-
+    // Tuning enabled
     #[cfg(feature = "tuning")]
         info.push_str(" + Tuning");
-
+    // Low memory enabled
     #[cfg(feature = "low_memory")]
         info.push_str(" + Low Memory");
+
+    // The following features aren't printed with default because they are assumed to be built in (still print when just manually added feature)
+    // Logging enabled
+    #[cfg(feature = "logging")]
+        info.push_str(" + Logging");
+    // Openings enabled
+    #[cfg(feature = "openings")]
+        info.push_str(" + Openings");
+    // Quiescence search
+    #[cfg(feature = "qsearch")]
+        info.push_str(" + Q-Search");
+    // Move ordering
+    #[cfg(feature = "move_ordering")]
+        info.push_str(" + Move Ordering");
+
 
     // Print out the license
     let license_result = option_env!("CARGO_PKG_LICENSE");
