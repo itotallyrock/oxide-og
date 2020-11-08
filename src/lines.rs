@@ -1,17 +1,7 @@
 
 // Local imports
 use crate::bitboard::Bitboard;
-#[cfg(not(feature = "low_memory"))]
-use crate::square::SQUARES;
 use crate::square::{masks::ALL, Square};
-// Std imports
-#[cfg(not(feature = "low_memory"))]
-use std::time::Instant;
-// External imports
-#[cfg(not(feature = "low_memory"))]
-use lazy_static::*;
-#[cfg(not(feature = "low_memory"))]
-use log::trace;
 
 fn line_bb(from_square: Square, to_square: Square) -> u64 {
     let from_mask = from_square.mask();
@@ -117,7 +107,7 @@ pub const fn between_fill(a: Square, b: Square) -> u64 {
     let line_mask = line_fill(a, b);
     // If aligned
     if line_mask != 0 {
-        let b = (line_mask & ((ALL << a.offset() as u64) ^ (ALL << b.offset() as u64)));
+        let b = line_mask & ((ALL << a.offset() as u64) ^ (ALL << b.offset() as u64));
         b & (b - 1)
     } else {
         0
@@ -125,6 +115,8 @@ pub const fn between_fill(a: Square, b: Square) -> u64 {
 }
 #[inline]
 pub const fn aligned(a: Square, b: Square, c: Square) -> bool {
+    // debug_assert_ne!(a, b);
+    // debug_assert_ne!(b, c);
     // If the line between a and b intersects c
     line_fill(a, b) & c.mask() > 0
 }
@@ -139,4 +131,102 @@ pub fn line_fill(a: Square, b: Square) -> u64 {
     line_bb(a, b)
 }
 
-// TODO: Test
+// TODO: Bench line stuffs
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::square::named::*;
+
+    #[test]
+    fn aligned_works() {
+        assert!(aligned(A2, A4, A6));
+        assert!(aligned(A2, A4, A8));
+        assert!(!aligned(B2, A4, A8));
+        assert!(!aligned(A2, B4, A8));
+        assert!(!aligned(A2, A4, B8));
+        assert!(!aligned(A2, B4, B8));
+        assert!(aligned(B2, B4, B8));
+        assert!(aligned(H1, A1, C1));
+        assert!(!aligned(H1, A1, C2));
+        assert!(aligned(H8, A1, D4));
+        assert!(!aligned(H8, A1, D5));
+        assert!(!aligned(H8, A2, D4));
+        assert!(!aligned(H7, A1, D4));
+    }
+
+    // TODO: Test aligned panics or behaves properly when given duplicate squares
+
+    #[test]
+    fn between_fill_works() {
+        // A1-H8 diagonal
+        assert_eq!(between_fill(A1, H8), 0x40201008040200);
+        assert_eq!(between_fill(A1, G7), 0x201008040200);
+        assert_eq!(between_fill(A1, F6), 0x1008040200);
+        assert_eq!(between_fill(A1, E5), 0x8040200);
+        assert_eq!(between_fill(B2, E5), 0x8040000);
+        assert_eq!(between_fill(B2, D4), 0x40000);
+        assert_eq!(between_fill(B3, D4), 0x0);
+        // G2-G6 vertical
+        assert_eq!(between_fill(G2, G6), 0x4040400000);
+        assert_eq!(between_fill(G3, G6), 0x4040000000);
+        assert_eq!(between_fill(G4, G6), 0x4000000000);
+        assert_eq!(between_fill(G4, G5), 0x0);
+        // F5-A5 horizontal
+        assert_eq!(between_fill(F5, A5), 0x1e00000000);
+        assert_eq!(between_fill(E5, A5), 0xe00000000);
+        assert_eq!(between_fill(D5, A5), 0x600000000);
+        assert_eq!(between_fill(D5, B5), 0x400000000);
+        assert_eq!(between_fill(D5, C5), 0x0);
+        // Non aligned between
+        assert_eq!(between_fill(A5, B7), 0x0);
+        assert_eq!(between_fill(H1, C8), 0x0);
+        assert_eq!(between_fill(E4, C1), 0x0);
+        assert_eq!(between_fill(E4, D1), 0x0);
+        assert_eq!(between_fill(E4, F1), 0x0);
+        assert_eq!(between_fill(E4, G1), 0x0);
+    }
+
+    #[test]
+    fn line_fill_works() {
+        // Non aligned
+        assert_eq!(line_fill(A1, B5), 0x0);
+        assert_eq!(line_fill(A1, B4), 0x0);
+        assert_eq!(line_fill(A1, C4), 0x0);
+        // Diagonal A1-H8
+        assert_eq!(line_fill(A1, D4), 0x8040201008040201);
+        assert_eq!(line_fill(B2, D4), 0x8040201008040201);
+        assert_eq!(line_fill(C3, D4), 0x8040201008040201);
+        assert_eq!(line_fill(D4, C3), 0x8040201008040201);
+        assert_eq!(line_fill(D4, E5), 0x8040201008040201);
+        assert_eq!(line_fill(D4, H8), 0x8040201008040201);
+        assert_eq!(line_fill(A1, H8), 0x8040201008040201);
+        // Diagonal A8-H1
+        assert_eq!(line_fill(A8, D5), 0x102040810204080);
+        assert_eq!(line_fill(B7, D5), 0x102040810204080);
+        assert_eq!(line_fill(C6, D5), 0x102040810204080);
+        assert_eq!(line_fill(D5, C6), 0x102040810204080);
+        assert_eq!(line_fill(D5, E4), 0x102040810204080);
+        assert_eq!(line_fill(D5, H1), 0x102040810204080);
+        assert_eq!(line_fill(A8, H1), 0x102040810204080);
+        // Non-major diagonal D8-H4
+        assert_eq!(line_fill(E7, G5), 0x810204080000000);
+        assert_eq!(line_fill(G5, E7), 0x810204080000000);
+        assert_eq!(line_fill(G5, H4), 0x810204080000000);
+        assert_eq!(line_fill(D8, H4), 0x810204080000000);
+        // Vertical G1-G4
+        assert_eq!(line_fill(G1, G4), 0x4040404040404040);
+        assert_eq!(line_fill(G1, G3), 0x4040404040404040);
+        assert_eq!(line_fill(G1, G2), 0x4040404040404040);
+        assert_eq!(line_fill(G4, G1), 0x4040404040404040);
+        // Horizontal A5-F5
+        assert_eq!(line_fill(A5, F5), 0xff00000000);
+        assert_eq!(line_fill(A5, E5), 0xff00000000);
+        assert_eq!(line_fill(A5, D5), 0xff00000000);
+        assert_eq!(line_fill(A5, C5), 0xff00000000);
+        assert_eq!(line_fill(B5, C5), 0xff00000000);
+        assert_eq!(line_fill(C5, F5), 0xff00000000);
+    }
+}
+
