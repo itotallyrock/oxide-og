@@ -70,13 +70,17 @@ impl Flags {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct ChessMove(pub Square, pub Square, pub Flags);
+pub struct ChessMove {
+    pub(crate) from: Square,
+    pub(crate) to: Square,
+    pub(crate) flags: Flags,
+}
 
 
 impl Display for ChessMove {
     fn fmt(&self, f: &mut Formatter<'_>) -> FormatResult {
-        let ChessMove(from, to, flags) = self;
-        match *flags {
+        let &ChessMove { from, to, flags } = self;
+        match flags {
             Flags::Quiet | Flags::DoublePawnPush => write!(f, "{}{}", from, to),
             // NOTE: Potentially handle differently (chess960 or o-o notation are concerns worth investigating)
             Flags::KingSideCastle | Flags::QueenSideCastle => write!(f, "{}{}", from, to),
@@ -94,18 +98,18 @@ impl Display for ChessMove {
 }
 
 impl ChessMove {
-    pub const WHITE_KING_CASTLE: ChessMove = ChessMove(E1, G1, Flags::KingSideCastle);
-    pub const WHITE_QUEEN_CASTLE: ChessMove = ChessMove(E1, C1, Flags::QueenSideCastle);
-    pub const BLACK_KING_CASTLE: ChessMove = ChessMove(E8, G8, Flags::KingSideCastle);
-    pub const BLACK_QUEEN_CASTLE: ChessMove = ChessMove(E8, C8, Flags::QueenSideCastle);
+    pub const WHITE_KING_CASTLE: ChessMove = ChessMove { from: E1, to: G1, flags: Flags::KingSideCastle };
+    pub const WHITE_QUEEN_CASTLE: ChessMove = ChessMove { from: E1, to: C1, flags: Flags::QueenSideCastle };
+    pub const BLACK_KING_CASTLE: ChessMove = ChessMove { from: E8, to: G8, flags: Flags::KingSideCastle };
+    pub const BLACK_QUEEN_CASTLE: ChessMove = ChessMove { from: E8, to: C8, flags: Flags::QueenSideCastle };
 
     pub fn from(&self) -> Square {
-        self.0
+        self.from
     }
     pub fn to(&self) -> Square {
-        self.1
+        self.to
     }
     pub fn flags(&self) -> Flags {
-        self.2
+        self.flags
     }
 }
