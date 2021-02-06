@@ -2,12 +2,39 @@
 // Local imports
 use crate::chess_move::ChessMove;
 use crate::eval::ScoreType;
+use crate::board::Board;
+use std::sync::RwLock;
+use crate::search::SearchError;
 
 // Max capacity of TT
-#[cfg(not(feature = "low_memory"))]
+#[cfg(not(any(feature = "low_memory", debug_assertions)))]
 pub const TT_DEFAULT_SIZE: usize = 100_000_019;
+#[cfg(all(debug_assertions, not(feature = "low_memory")))]
+pub const TT_DEFAULT_SIZE: usize = 1_000_019;
 #[cfg(feature = "low_memory")]
-pub const TT_DEFAULT_SIZE: usize = 100003;
+pub const TT_DEFAULT_SIZE: usize = 100_003;
+
+#[inline]
+pub fn probe_tt(tt: &RwLock<TranspositionTable>, board: &Board) -> Result<Option<TranspositionEntry>, SearchError> {
+    probe_tt_by_key(tt, board.state().key())
+}
+
+#[inline]
+pub fn probe_tt_by_key(tt: &RwLock<TranspositionTable>, key: u64) -> Result<Option<TranspositionEntry>, SearchError> {
+    #[cfg(feature = "diagnostics")] {
+        return Ok(tt.write().map_err(|_| SearchError::UnableToWriteTT)?.get(key));
+    }
+    #[cfg(not(feature = "diagnostics"))] {
+        return Ok(tt.read().map_err(|_| SearchError::UnableToReadTT)?.get(key));
+    }
+}
+
+#[inline]
+pub fn insert_tt(tt: &RwLock<TranspositionTable>, new_entry: TranspositionEntry) -> Result<(), SearchError> {
+    tt.write().map_err(|_| SearchError::UnableToWriteTT)?.insert(new_entry.key, new_entry);
+
+    Ok(())
+}
 
 
 #[derive(Debug)]
@@ -15,7 +42,7 @@ pub struct TranspositionTable {
     len: usize,
     capacity: usize,
     entries: Vec<Option<TranspositionEntry>>,
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "diagnostics")]
     hits: usize,
 }
 
@@ -26,7 +53,7 @@ impl TranspositionTable {
             len: 0,
             capacity: tt_size,
             entries: vec![None; tt_size],
-            #[cfg(debug_assertions)]
+            #[cfg(feature = "diagnostics")]
             hits: 0,
         }
     }
@@ -38,22 +65,22 @@ impl TranspositionTable {
     pub const fn len(&self) -> usize {
         self.len
     }
-    pub fn insert(&mut self, key: u64, entry: TranspositionEntry) {
+    #[inline]
+    pub const fn is_empty(&self) -> bool { self.len == 0 }
+    pub fn insert(&mut self, key: u64, new_entry: TranspositionEntry) {
         // Try to get an entry at the key given to see if we are overwriting
         let entry = if let Some(existing_entry) = self.get(key) {
             // No need to increment length since we have an entry at this slot already
-            // Choose the highest depth to keep
-            if existing_entry.depth > entry.depth {
-                // Always use the higher depth
-                existing_entry
+            // Choose which entry to keep, prefer PV, to prevent key collisions overwrite if keys differ, and keep the highest depth
+            if new_entry.node_type == PVType::PV || new_entry.key != existing_entry.key || new_entry.depth > existing_entry.depth {
+                new_entry
             } else {
-                // trace!("overwriting tt entry depth {} with higher depth {}", existing_entry.depth, entry.depth);
-                entry
+                existing_entry
             }
         } else {
             // Since we are adding a new entry increment length
             self.len += 1;
-            entry
+            new_entry
         };
         // Set the slot to the entry we chose
         self.entries[key as usize % self.capacity] = Some(entry);
@@ -64,22 +91,25 @@ impl TranspositionTable {
         self.entries.iter().filter(|e| e.is_some()).map(|e| e.as_ref().unwrap())
     }
     #[inline]
-    #[cfg(not(debug_assertions))]
+    #[cfg(not(feature = "diagnostics"))]
     pub fn get(&self, key: u64) -> Option<TranspositionEntry> {
         // This is safe as long as entries has the same length as capacity
+        debug_assert!(self.entries.capacity() >= self.capacity, "Underlying capacity is not high enough");
         unsafe { self.entries.get_unchecked(key as usize % self.capacity()) }.filter(|tt| {
             tt.key == key
         })
     }
     #[inline]
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "diagnostics")]
     pub fn get(&mut self, key: u64) -> Option<TranspositionEntry> {
         // This is safe as long as entries has the same length (or less than) capacity
-        let t = &self.entries[key as usize % self.capacity()];
+        let entry = self.entries[key as usize % self.capacity()];
         // unsafe { self.entries.get_unchecked(key as usize % self.capacity()) }.filter(|tt| tt.key == key).as_ref()
-        t.filter(|tt| if tt.key == key {
+        entry.filter(|e| if e.key == key {
             // Update hits since we are in debug
-            self.hits += 1;
+            #[cfg(feature = "diagnostics")] {
+                self.hits += 1;
+            }
             true
         } else {
             false
@@ -111,6 +141,7 @@ pub enum PVType {
 // NOTE: Packed to save memory, but might slow down access operations or lead to undefined behavior https://github.com/rust-lang/rust/issues/27060
 #[cfg_attr(feature = "low_memory", repr(packed))]
 pub struct TranspositionEntry {
+    // TODO: Consider only storing truncated key as u16 (if key is uniformly distributed we can still match on lower 16bits mostly safely (at least on low_memory))
     key: u64,
     best_move: ChessMove,
     depth: u8,
@@ -120,21 +151,27 @@ pub struct TranspositionEntry {
 
 // Getters
 impl TranspositionEntry {
+    #[inline]
     pub const fn best_move(&self) -> ChessMove {
         self.best_move
     }
+    #[inline]
     pub const fn key(&self) -> u64 {
         self.key
     }
+    #[inline]
     pub const fn depth(&self) -> u8 {
         self.depth
     }
+    #[inline]
     pub const fn score(&self) -> i32 {
         self.score
     }
+    #[inline]
     pub const fn node_type(&self) -> PVType {
         self.node_type
     }
+    #[inline]
     pub const fn new(key: u64, best_move: ChessMove, depth: u8, score: i32, node_type: PVType) -> Self {
         Self {
             key,
