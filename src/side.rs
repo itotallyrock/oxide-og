@@ -55,4 +55,36 @@ mod test {
         assert_eq!(Side::WHITE.opposite(), Side::BLACK);
         assert_eq!(Side::BLACK.opposite(), Side::WHITE);
     }
+
+    #[test]
+    fn side_usize_is_working() {
+        assert_eq!(usize::from(Side::WHITE), 0usize);
+        assert_eq!(usize::from(Side::BLACK), 1usize);
+    }
+
+    #[test]
+    fn char_from_side_works() {
+        assert_eq!(char::from(Side::WHITE), 'w');
+        assert_eq!(char::from(Side::BLACK), 'b');
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    extern crate test;
+
+    use test::Bencher;
+    use super::*;
+
+    #[bench]
+    fn white_opposite_bench(bencher: &mut Bencher) {
+        let side = test::black_box(Side::WHITE);
+        bencher.iter(|| side.opposite());
+    }
+
+    #[bench]
+    fn black_opposite_bench(bencher: &mut Bencher) {
+        let side = test::black_box(Side::BLACK);
+        bencher.iter(|| side.opposite());
+    }
 }
