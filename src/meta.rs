@@ -1,7 +1,7 @@
 
-pub const NAME: &'static str = "Oxide";
+pub const NAME: &str = "Oxide";
 // NOTE: When const-expr are better supported we can parse option_env!("CARGO_PKG_AUTHORS")
-pub const AUTHORS: &'static str = "Jeffrey Meyer <itotallyrock>";
+pub const AUTHORS: &str = "Jeffrey Meyer <itotallyrock>";
 
 pub fn oxide_info() -> String {
     // How long the info string should be
@@ -10,6 +10,10 @@ pub fn oxide_info() -> String {
     let mut info = String::with_capacity(INFO_LENGTH);
     // Print the name
     info.push_str(NAME);
+
+    #[cfg(debug_assertions)]
+        info.push_str(" (Debug)");
+
     // Get the version
     let version: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
     // If the version exists print out along with name
@@ -37,9 +41,18 @@ pub fn oxide_info() -> String {
     // Quiescence search
     #[cfg(feature = "qsearch")]
         info.push_str(" + Q-Search");
-    // Move ordering
+    // Killer heuristic
+    #[cfg(feature = "killer_heuristic")]
+        info.push_str(" + Killers");
+    // History heuristic
+    #[cfg(feature = "history_heuristic")]
+        info.push_str(" + History");
+    // Delta pruning
+    #[cfg(feature = "delta_pruning")]
+        info.push_str(" + Delta");
+    // Internal iterative deepening
     #[cfg(feature = "move_ordering")]
-        info.push_str(" + Move Ordering");
+        info.push_str(" + IID");
 
 
     // Print out the license
