@@ -43,6 +43,14 @@ impl Default for ColoredPiece {
 
 impl Piece {
     pub const COUNT: usize = 6;
+    pub const PIECES: [Self; Self::COUNT] = [
+        Self::Pawn,
+        Self::Bishop,
+        Self::Rook,
+        Self::King,
+        Self::Knight,
+        Self::Queen,
+    ];
     /// Color the regular piece so it belongs to a side
     pub const fn color(self, side: Side) -> ColoredPiece {
         match self {
@@ -70,6 +78,20 @@ impl Piece {
 
 impl ColoredPiece {
     pub const COUNT: usize = 12;
+    pub const COLORED_PIECES: [Self; Self::COUNT] = [
+        ColoredPiece::WPawn,
+        ColoredPiece::BPawn,
+        ColoredPiece::WRook,
+        ColoredPiece::BRook,
+        ColoredPiece::WKnight,
+        ColoredPiece::BKnight,
+        ColoredPiece::WKing,
+        ColoredPiece::BKing,
+        ColoredPiece::WQueen,
+        ColoredPiece::BQueen,
+        ColoredPiece::WBishop,
+        ColoredPiece::BBishop
+    ];
     /// Get the side of a colored piece
     pub const fn side(self) -> Side {
         match self {
@@ -164,6 +186,16 @@ impl Display for ColoredPiece {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn const_pieces_list_is_same_as_count() {
+        assert_eq!(Piece::PIECES.len(), Piece::COUNT);
+    }
+
+    #[test]
+    fn const_colored_pieces_list_is_same_as_count() {
+        assert_eq!(ColoredPiece::COLORED_PIECES.len(), ColoredPiece::COUNT);
+    }
 
     #[test]
     fn white_uncolor_works() {
