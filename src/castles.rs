@@ -115,7 +115,7 @@ impl Display for CastlePermissions {
             CastlePermissions::BLACK_ALL_WHITE_KING => write!(f, "Kkq"),
             CastlePermissions::BLACK_ALL_WHITE_QUEEN => write!(f, "Qkq"),
             CastlePermissions::ALL => write!(f, "KQkq"),
-            CastlePermissions::NONE | _ => write!(f, "-"),
+            _ => write!(f, "-"),
         }
     }
 }
