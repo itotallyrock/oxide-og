@@ -49,46 +49,48 @@ pub trait Bitboard {
 }
 
 // Macros for reducing code duplications in occluded fills
-macro_rules! left_fill_masked {
-    ($mask:ident, $column_mask:ident, $coefficient:expr) => {
-        let mask_1 = $column_mask & ($column_mask << $coefficient);
-        let mask_2 = mask_1 & (mask_1 << (2 * $coefficient));
++9macro_rules! fill_masked {
+    ($mask:ident, $column_mask:ident << $coefficient:expr) => {{
+        const MASK_1: u64 = $column_mask & ($column_mask << $coefficient);
+        const MASK_2: u64  = MASK_1 & (MASK_1 << (2 * $coefficient));
         $mask |= $column_mask & ($mask << $coefficient);
-        $mask |= mask_1 & ($mask << (2 * $coefficient));
-        $mask |= mask_2 & ($mask << (4 * $coefficient));
-    };
-}
+        $mask |= MASK_1 & ($mask << (2 * $coefficient));
+        $mask |= MASK_2 & ($mask << (4 * $coefficient));
 
-macro_rules! right_fill_masked {
-    ($mask:ident, $column_mask:ident, $coefficient:expr) => {
-        let mask_1 = $column_mask & ($column_mask >> $coefficient);
-        let mask_2 = mask_1 & (mask_1 >> (2 * $coefficient));
+        return $mask;
+    }};
+    ($mask:ident, $column_mask:ident >> $coefficient:expr) => {{
+        const MASK_1: u64 = $column_mask & ($column_mask >> $coefficient);
+        const MASK_2: u64  = MASK_1 & (MASK_1 >> (2 * $coefficient));
         $mask |= $column_mask & ($mask >> $coefficient);
-        $mask |= mask_1 & ($mask >> (2 * $coefficient));
-        $mask |= mask_2 & ($mask >> (4 * $coefficient));
-    };
+        $mask |= MASK_1 & ($mask >> (2 * $coefficient));
+        $mask |= MASK_2 & ($mask >> (4 * $coefficient));
+
+        return $mask;
+    }};
 }
 
-macro_rules! left_fill_occluded_mask {
-    ($mask:ident, $empty:ident, $column_mask:ident, $coefficient:expr) => {
+macro_rules! fill_occluded_mask {
+    ($mask:ident, $empty:ident, $column_mask:ident << $coefficient:expr) => {{
         $empty  &= $column_mask;
         $mask   |= $empty & ($mask  << $coefficient);
         $empty  &=          ($empty << $coefficient);
         $mask   |= $empty & ($mask  << (2 * $coefficient));
         $empty  &=          ($empty << (2 * $coefficient));
         $mask   |= $empty & ($mask  << (4 * $coefficient));
-    };
-}
 
-macro_rules! right_fill_occluded_mask {
-    ($mask:ident, $empty:ident, $column_mask:ident, $coefficient:expr) => {
+        return $mask;
+    }};
+    ($mask:ident, $empty:ident, $column_mask:ident >> $coefficient:expr) => {{
         $empty  &= $column_mask;
         $mask   |= $empty & ($mask  >> $coefficient);
         $empty  &=          ($empty >> $coefficient);
         $mask   |= $empty & ($mask  >> (2 * $coefficient));
         $empty  &=          ($empty >> (2 * $coefficient));
         $mask   |= $empty & ($mask  >> (4 * $coefficient));
-    };
+
+        return $mask;
+    }};
 }
 
 impl const Bitboard for u64 {
@@ -152,39 +154,27 @@ impl const Bitboard for u64 {
     }
     #[inline]
     fn east_fill(mut self) -> Self {
-        left_fill_masked!(self, NOT_A_FILE, 1);
-
-        self
+        fill_masked!(self, NOT_A_FILE << 1);
     }
     #[inline]
     fn west_fill(mut self) -> Self {
-        right_fill_masked!(self, NOT_H_FILE, 1);
-
-        self
+        fill_masked!(self, NOT_H_FILE >> 1);
     }
     #[inline]
     fn north_west_fill(mut self) -> Self {
-        left_fill_masked!(self, NOT_H_FILE, 7);
-
-        self
+        fill_masked!(self, NOT_H_FILE << 7);
     }
     #[inline]
     fn north_east_fill(mut self) -> Self {
-        left_fill_masked!(self, NOT_A_FILE, 9);
-
-        self
+        fill_masked!(self, NOT_A_FILE << 9);
     }
     #[inline]
     fn south_west_fill(mut self) -> Self {
-        right_fill_masked!(self, NOT_H_FILE, 9);
-
-        self
+        fill_masked!(self, NOT_H_FILE >> 9);
     }
     #[inline]
     fn south_east_fill(mut self) -> Self {
-        right_fill_masked!(self, NOT_A_FILE, 7);
-
-        self
+        fill_masked!(self, NOT_A_FILE >> 7);
     }
     #[inline]
     fn cardinal_fill(self) -> Self {
@@ -197,43 +187,35 @@ impl const Bitboard for u64 {
     // Occluded fills
     #[inline]
     fn south_occluded_fill(mut self, mut empty: Self) -> Self {
-        right_fill_occluded_mask!(self, empty, ALL, 8);
-        self
+        fill_occluded_mask!(self, empty, ALL >> 8);
     }
     #[inline]
     fn north_occluded_fill(mut self, mut empty: Self) -> Self {
-        left_fill_occluded_mask!(self, empty, ALL, 8);
-        self
+        fill_occluded_mask!(self, empty, ALL << 8);
     }
     #[inline]
     fn east_occluded_fill(mut self, mut empty: Self) -> Self {
-        left_fill_occluded_mask!(self, empty, NOT_A_FILE, 1);
-        self
+        fill_occluded_mask!(self, empty, NOT_A_FILE << 1);
     }
     #[inline]
     fn west_occluded_fill(mut self, mut empty: Self) -> Self {
-        right_fill_occluded_mask!(self, empty, NOT_H_FILE, 1);
-        self
+        fill_occluded_mask!(self, empty, NOT_H_FILE >> 1);
     }
     #[inline]
     fn north_east_occluded_fill(mut self, mut empty: Self) -> Self {
-        left_fill_occluded_mask!(self, empty, NOT_A_FILE, 9);
-        self
+        fill_occluded_mask!(self, empty, NOT_A_FILE << 9);
     }
     #[inline]
     fn north_west_occluded_fill(mut self, mut empty: Self) -> Self {
-        left_fill_occluded_mask!(self, empty, NOT_H_FILE, 7);
-        self
+        fill_occluded_mask!(self, empty, NOT_H_FILE << 7);
     }
     #[inline]
     fn south_east_occluded_fill(mut self, mut empty: Self) -> Self {
-        right_fill_occluded_mask!(self, empty, NOT_A_FILE, 7);
-        self
+        fill_occluded_mask!(self, empty, NOT_A_FILE >> 7);
     }
     #[inline]
     fn south_west_occluded_fill(mut self, mut empty: Self) -> Self {
-        right_fill_occluded_mask!(self, empty, NOT_H_FILE, 9);
-        self
+        fill_occluded_mask!(self, empty, NOT_H_FILE >> 9);
     }
 
     // Ray attacks
@@ -540,6 +522,66 @@ mod bench {
         let rooks = test::black_box(0x100000);
         let empty = 0xffffeffffb6fdfef;
         bencher.iter(|| Bitboard::cardinal_ray_attacks(rooks, empty));
+    }
+
+    #[bench]
+    fn cardinal_fill_bench(bencher: &mut Bencher) {
+        let rooks = test::black_box(0x100000);
+        bencher.iter(|| Bitboard::cardinal_fill(rooks));
+    }
+
+    #[bench]
+    fn diagonal_fill_bench(bencher: &mut Bencher) {
+        let bishops = test::black_box(0x8000000000000000);
+        bencher.iter(|| Bitboard::diagonal_fill(bishops));
+    }
+
+    #[bench]
+    fn north_fill_bench(bencher: &mut Bencher) {
+        let rooks = test::black_box(0x100000);
+        bencher.iter(|| Bitboard::north_fill(rooks));
+    }
+
+    #[bench]
+    fn south_fill_bench(bencher: &mut Bencher) {
+        let rooks = test::black_box(0x100000);
+        bencher.iter(|| Bitboard::south_fill(rooks));
+    }
+
+    #[bench]
+    fn east_fill_bench(bencher: &mut Bencher) {
+        let rooks = test::black_box(0x100000);
+        bencher.iter(|| Bitboard::east_fill(rooks));
+    }
+
+    #[bench]
+    fn west_fill_bench(bencher: &mut Bencher) {
+        let rooks = test::black_box(0x100000);
+        bencher.iter(|| Bitboard::west_fill(rooks));
+    }
+
+    #[bench]
+    fn north_east_fill_bench(bencher: &mut Bencher) {
+        let bishops = test::black_box(0x8000000000000000);
+        bencher.iter(|| Bitboard::north_east_fill(bishops));
+    }
+
+    #[bench]
+    fn north_west_fill_bench(bencher: &mut Bencher) {
+        let bishops = test::black_box(0x8000000000000000);
+        bencher.iter(|| Bitboard::north_west_fill(bishops));
+    }
+
+    #[bench]
+    fn south_east_fill_bench(bencher: &mut Bencher) {
+        let bishops = test::black_box(0x8000000000000000);
+        bencher.iter(|| Bitboard::south_east_fill(bishops));
+    }
+
+    #[bench]
+    fn south_west_fill_bench(bencher: &mut Bencher) {
+        let bishops = test::black_box(0x8000000000000000);
+        bencher.iter(|| Bitboard::south_west_fill(bishops));
     }
 }
 
