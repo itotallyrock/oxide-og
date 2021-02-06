@@ -49,7 +49,7 @@ pub trait Bitboard {
 }
 
 // Macros for reducing code duplications in occluded fills
-+9macro_rules! fill_masked {
+macro_rules! fill_masked {
     ($mask:ident, $column_mask:ident << $coefficient:expr) => {{
         const MASK_1: u64 = $column_mask & ($column_mask << $coefficient);
         const MASK_2: u64  = MASK_1 & (MASK_1 << (2 * $coefficient));
