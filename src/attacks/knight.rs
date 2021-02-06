@@ -34,7 +34,7 @@ mod bench {
 
     #[bench]
     fn knight_attack_bench(bencher: &mut Bencher) {
-        let from_mask = test::black_box(E3).mask();
+        let from_mask = test::black_box(E3.mask());
         bencher.iter(|| knight_attacks(from_mask));
     }
 }
