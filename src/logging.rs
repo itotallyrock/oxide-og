@@ -17,7 +17,7 @@ fn get_log_file() -> File {
     }
 
     let mut file = file_result.unwrap();
-    file.write(b"\n").expect("Failed to write to log file");
+    file.write_all(b"\n").expect("Failed to write to log file");
 
     file
 }
@@ -25,16 +25,26 @@ fn get_log_file() -> File {
 pub fn init_logging() {
     let file = get_log_file();
 
-    #[cfg(debug_assertions)] {
-        let result = WriteLogger::init(LevelFilter::Trace, Config::default(), file);
-        if result.is_err() {
-            panic!("Failed to create log instance: {}", result.err().unwrap());
+    let log_level = if let Some(log_level) = option_env!("OXIDE_LOG_LEVEL") {
+        match log_level.to_ascii_lowercase().as_str() {
+            "off" | "disabled" => LevelFilter::Off,
+            "error" => LevelFilter::Error,
+            "warn" | "warning" => LevelFilter::Warn,
+            "info" | "on" | "enabled" => LevelFilter::Info,
+            "debug" => LevelFilter::Debug,
+            "trace" | "verbose" | "all" => LevelFilter::Trace,
+            _ => {
+                eprintln!("Unrecognized log level: \"{}\" [on|off,error,warn,info,debug,all]", log_level);
+                LevelFilter::Info
+            }
         }
-    }
-    #[cfg(not(debug_assertions))] {
-        let result = WriteLogger::init(LevelFilter::Info, Config::default(), file);
-        if result.is_err() {
-            panic!("Failed to create log instance: {}", result.err().unwrap());
-        }
+    } else if cfg!(debug_assertions) {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+    let result = WriteLogger::init(log_level, Config::default(), file);
+    if result.is_err() {
+        panic!("Failed to create log instance: {}", result.err().unwrap());
     }
 }
