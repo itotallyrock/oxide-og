@@ -4,8 +4,6 @@ use named::*;
 // Std imports
 use std::ops::{Add, Sub};
 use std::fmt::{Display, Result as FormatResult, Formatter};
-// External imports
-use bitintr::Blsr;
 
 // Square char representation
 const FILE_CHARS: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -186,8 +184,16 @@ pub mod named {
 }
 
 // Square type
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord)]
 pub struct Square(u8);
+
+impl const PartialEq for Square {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl const Eq for Square { }
 
 impl Square {
     // How many possible squares
@@ -273,18 +279,36 @@ impl Sub<i8> for Square {
     }
 }
 
-pub(crate) fn mask_to_square_iter(mut mask: u64) -> impl Iterator<Item=Square> {
-    let mut squares = Vec::new();
-
-    while mask > 0 {
-        let offset = mask.trailing_zeros();
-        let square = Square::new(offset as u8);
-        squares.push(square);
-        mask = mask.blsr();
+fn blsr(mask: u64) -> u64 {
+    #[cfg(all(target_arch = "x86_64", target_feature = "bmi1"))] {
+        return std::arch::x86_64::blsr_u64(mask);
+    }
+    #[cfg(not(all(target_arch = "x86_64", target_feature = "bmi1")))] {
+        mask & mask.saturating_sub(1)
     }
 
-    squares.into_iter()
 }
+
+pub struct MaskSquareIter(pub u64);
+
+impl Iterator for MaskSquareIter {
+    type Item = Square;
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        pop_square(&mut self.0)
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, std::option::Option<usize>) {
+        if self.0 == 0 {
+            (0, Some(0))
+        } else {
+            let ones = self.0.count_ones() as usize;
+
+            (ones, Some(ones))
+        }
+    }
+}
+
 #[inline(always)]
 pub(crate) fn pop_square(mask: &mut u64) -> Option<Square> {
     if *mask == 0 {
@@ -292,7 +316,7 @@ pub(crate) fn pop_square(mask: &mut u64) -> Option<Square> {
     } else {
         let offset = mask.trailing_zeros();
         let square = Square(offset as u8);
-        *mask = mask.blsr();
+        *mask = blsr(*mask);
 
         Some(square)
     }
@@ -301,6 +325,62 @@ pub(crate) fn pop_square(mask: &mut u64) -> Option<Square> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn blsr_works() {
+        assert_eq!(blsr(0), 0);
+        assert_eq!(blsr(1), 0);
+        assert_eq!(blsr(2), 0);
+        assert_eq!(blsr(3), 2);
+        assert_eq!(blsr(4), 0);
+        assert_eq!(blsr(5), 4);
+        assert_eq!(blsr(6), 4);
+        assert_eq!(blsr(0xb659ac122ea95e2a), 0xb659ac122ea95e28);
+        assert_eq!(blsr(0xb659ac122ea95e28), 0xb659ac122ea95e20);
+        assert_eq!(blsr(0xb659ac122ea95e20), 0xb659ac122ea95e00);
+        assert_eq!(blsr(0xb659ac122ea95e00), 0xb659ac122ea95c00);
+        assert_eq!(blsr(0xb659ac122ea95c00), 0xb659ac122ea95800);
+        assert_eq!(blsr(0xb659ac122ea95800), 0xb659ac122ea95000);
+        assert_eq!(blsr(0xb659ac122ea95000), 0xb659ac122ea94000);
+        assert_eq!(blsr(0xb659ac122ea94000), 0xb659ac122ea90000);
+    }
+
+    #[test]
+    fn pop_square_works() {
+        let mut mask = 0;
+        assert_eq!(pop_square(&mut mask), None);
+        assert_eq!(mask, 0);
+        let mut mask = 0xb659ac122ea95e2a;
+        assert_eq!(pop_square(&mut mask), Some(B1));
+        assert_eq!(mask, 0xb659ac122ea95e28);
+        let mut mask = 0xb659ac122ea95e28;
+        assert_eq!(pop_square(&mut mask), Some(D1));
+        assert_eq!(mask, 0xb659ac122ea95e20);
+        let mut mask = 0xb659ac122ea95e20;
+        assert_eq!(pop_square(&mut mask), Some(F1));
+        assert_eq!(mask, 0xb659ac122ea95e00);
+        let mut mask = 0xb659ac122ea95e00;
+        assert_eq!(pop_square(&mut mask), Some(B2));
+        assert_eq!(mask, 0xb659ac122ea95c00);
+        let mut mask = 0xb659ac122ea95c00;
+        assert_eq!(pop_square(&mut mask), Some(C2));
+        assert_eq!(mask, 0xb659ac122ea95800);
+        let mut mask = 0xb659ac122ea95800;
+        assert_eq!(pop_square(&mut mask), Some(D2));
+        assert_eq!(mask, 0xb659ac122ea95000);
+        let mut mask = 0xb659ac122ea95000;
+        assert_eq!(pop_square(&mut mask), Some(E2));
+        assert_eq!(mask, 0xb659ac122ea94000);
+        let mut mask = 0xb659ac122ea94000;
+        assert_eq!(pop_square(&mut mask), Some(G2));
+        assert_eq!(mask, 0xb659ac122ea90000);
+        let mut mask = 0x8000000000000001;
+        assert_eq!(pop_square(&mut mask), Some(A1));
+        assert_eq!(mask, 0x8000000000000000);
+        let mut mask = 0x8000000000000000;
+        assert_eq!(pop_square(&mut mask), Some(H8));
+        assert_eq!(mask, 0);
+    }
 
     #[test]
     fn x_works() {
@@ -378,5 +458,37 @@ mod tests {
         assert_eq!(masks::file_for_x(5), masks::F_FILE);
         assert_eq!(masks::file_for_x(6), masks::G_FILE);
         assert_eq!(masks::file_for_x(7), masks::H_FILE);
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    extern crate test;
+
+    use test::Bencher;
+    use super::*;
+
+    #[bench]
+    fn pop_square_bench(bencher: &mut Bencher) {
+        let mut mask = test::black_box(0x22000022000u64);
+        bencher.iter(|| pop_square(&mut mask));
+    }
+
+    #[bench]
+    fn pop_square_empty_bench(bencher: &mut Bencher) {
+        let mut mask = test::black_box(0x0u64);
+        bencher.iter(|| pop_square(&mut mask));
+    }
+
+    #[bench]
+    fn four_bit_pop_square_bench(bencher: &mut Bencher) {
+        let mut mask = test::black_box(0x22000022000u64);
+        bencher.iter(|| while pop_square(&mut mask).is_some() {});
+    }
+
+    #[bench]
+    fn sixty_four_bit_pop_square_bench(bencher: &mut Bencher) {
+        let mut mask = test::black_box(0xffffffffffffffffu64);
+        bencher.iter(|| while pop_square(&mut mask).is_some() {});
     }
 }
