@@ -15,7 +15,7 @@ mod pawn;
 pub use sliding::{bishop_attacks, rook_attacks, queen_attacks};
 pub use king::king_attacks;
 pub use knight::knight_attacks;
-pub use pawn::{pawn_attacks, pawn_pushes};
+pub use pawn::{pawn_attacks, pawn_pushes, pawn_square_reverse_push};
 
 pub fn pseudo_attacks(piece: Piece, from_square: Square, occupied: u64) -> u64 {
     match piece {
