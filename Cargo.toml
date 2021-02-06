@@ -1,43 +1,79 @@
 [package]
 name = "oxide"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Jeffrey Meyer <itotallyrock>"]
 edition = "2018"
 description = "Oxide an attempt at a rust chess engine"
 keywords = ["chess", "engine"]
 license = "MIT"
+include = ["openings.pgn"]
 
 [features]
 # Default encompasses a number of features below
-default = ["simplelog"]
+default = ["logging", "qsearch", "delta_pruning", "history_heuristic", "killer_heuristic"]
+beta = ["default", "diagnostics", "tuning"]
 # Add logging to a file (useful to have in most builds, but can be disabled)
 logging = ["simplelog"]
-# Avoid large tables instead try computing most values on the fly
-low_memory = []
+low_memory = [] # TODO: Avoid large tables, either reduce their size or try computing on the fly
+perft_only = [] # Only build with perft functionality
+tuning = [] # TODO: Reads weights from weights file at runtime instead of compile time constants
+simd = ["packed_simd"] # TODO: Support doing manually doing multiple operations at a time using SIMD NOTE: Maybe use target_arch/feature instead of a feature
+
+# Future features that might just be always included (unless there is a downside to them)
+mctsearch = ["fastrand"] # TODO: Monte-carlo tree search
+mtdsearch = [] # TODO: Memory enhanced test driver
+
 # Bundles the parsed openings file at compilation
 openings = [] # TODO: Depend on pgn parser for reading openings (unless we make our own again)
-# Bundle endgame base for 5 man and maybe allow config for reading at runtime up to 8 man
-#endgames = ["fprobe or shakmaty-syzygy"] # TODO
-# Reads weights from weights file at runtime instead of compile time constants
-tuning = []
-# Support doing multiple position operations at a time using SIMD
-#simd_position = [] # NOTE: Maybe use target_arch/feature instead of a feature
-# Neural network evaluation function
-#nn_eval = []
-# Future features that might just be always included (unless there is a downside to them)
-#move_ordering = [] # TODO
-#qsearch = [] # TODO
+endgames = [] # TODO: Bundle endgame base for 5 man and maybe allow config for reading at runtime up to 8 man (fprobe or shakmaty-szysgzy)
+qsearch = [] # Quiescence search for extended resolving of unresolved positions before evaluating the board
+nnue = [] # TODO: Neural network evaluation function, ideally using stockfish nnue so we can use their training
+static_exchange_eval = [] # TODO: SEE for move ordering (override MVV/LVA) and delta pruning (delta pruning requires this)
+internal_iterative_deepening = [] # TODO: Internal iterative deepen to sort non-capture moves
+delta_pruning = [] # Futility prune in quiescence nodes
+futility_pruning = [] # TODO: Futility pruning
+razoring = [] # TODO: Razoring
+late_move_reduction = [] # Late move reduction
+null_window_search = [] # Null window search
+null_search_pruning = [] # TODO: Null search pruning
+history_heuristic = [] # History/butterfly heuristic for move ordering
+killer_heuristic = [] # Killer move heuristic for move ordering
+prob_cut = [] # TODO: ProbCut for statistical reduction (eval must be really good and stable before this is implemented) (probably dont use in endgames positions)
+clustered_tt = [] # TODO: Use buckets in TT to avoid overwriting valuable TT entries because of key collisions
+# more_optimized_thread_search = [] # TODO: Replace LazySMP in EngineController with something that utilized threads better
 
+# Internal diagnostics/debugging tools for oxide
+# TODO: Counters and timers for statistics all over (movegen times and call counts, ab_search times, branching factor, and call counts, startup/initiailization times, q_search, etc)
+# TODO: Data dumping (either via uci info or uci commands)
+# TODO: Adds a bunch of custom commands (possibly manual search calls like ab, qsearch, mtd, or pv if also feature enabled)
+# TODO: Command to print what features are enabled
+# TODO: Command to makemove on the current position while not searching (add undomove command too)
+# TODO: Command to get current position in TT
+# TODO: Logging with diagnostic data
+# TODO: Save plots of the runtime in a diagnostics folder (add to gitignore)
+# TODO: If it would be useful a pause command, to halt and yield the thread or spinlock until unpaused (could be useful if we want to debug the state (in progress statistics) of the search in multiple threads)
+ diagnostics = ["plotlib"]
+
+# TODO: Support other variants of chess
+#chess_960 = []
+
+[profile.release]
+lto = "fat"
+debug = true
+codegen-units = 1
 
 [dependencies]
+smallvec = { version = "1.6.1", features = ["const_generics", "union", "specialization"] }
 lazy_static = "1.4"
-bitintr = "0.3.0"
 nom = "5"
 nom_locate = "2.0.0"
-# packed_simd = "0.3.3"
+packed_simd = { version = "0.3.4", package = "packed_simd_2", optional = true }
 static_assertions = "1.1.0"
 log = "0.4.11"
 simplelog = { version = "0.8.0", optional = true }
+fastrand = { version = "1.4.0", optional = true }
+plotlib = { version = "0.5.1", optional = true }
+vampirc-uci = "0.11.0" # TODO: Possibly make optional with UCI feature (question is what is behavior without it (RPC? HTTP API? WASM JS BINDINGS?), also what to do when perft_only)
 
 [dev-dependencies]
 
