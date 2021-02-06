@@ -1,17 +1,19 @@
 
 // Local imports
+#[cfg(feature = "low_memory")]
 use crate::bitboard::Bitboard;
 use crate::square::{masks::ALL, Square};
 
-fn line_bb(from_square: Square, to_square: Square) -> u64 {
+#[cfg(feature = "low_memory")]
+const fn line_bb(from_square: Square, to_square: Square) -> u64 {
     let from_mask = from_square.mask();
-    // Ignore from == to (no movement move)
-    if from_square == to_square {
-        return from_mask;
-    }
-    // println!("Getting between for {} {}", from_square, to_square);
     // Get to square mask
     let to_mask = to_square.mask();
+    // Ignore from == to (no movement move)
+    match from_mask ^ to_mask {
+        0 => return from_mask,
+        _ => {},
+    }
     // Get rook attacks from the from square blocked by to
     let from_rook = Bitboard::cardinal_fill(from_mask);
     // Get rook attacks from the to square blocked by from
@@ -23,14 +25,13 @@ fn line_bb(from_square: Square, to_square: Square) -> u64 {
     let to_bishop = Bitboard::diagonal_fill(to_mask);
 
     // If the rook attacks overlap
-    if from_rook & to_mask > 0 {
-        (from_rook & to_rook) | from_mask | to_mask
-    // If the bishop attacks overlap
-    } else if from_bishop & to_mask > 0 {
-        (from_bishop & to_bishop) | from_mask | to_mask
-    // Otherwise 0
-    } else {
-        0
+    match from_mask & to_mask {
+        // If the bishop attacks overlap
+        0 => match from_bishop & to_mask {
+            0 => 0,
+            _ => (from_bishop & to_bishop) | from_mask | to_mask,
+        },
+        _ => (from_rook & to_rook) | from_mask | to_mask,
     }
 }
 
@@ -127,7 +128,7 @@ pub const fn line_fill(a: Square, b: Square) -> u64 {
 }
 #[inline]
 #[cfg(feature = "low_memory")]
-pub fn line_fill(a: Square, b: Square) -> u64 {
+pub const fn line_fill(a: Square, b: Square) -> u64 {
     line_bb(a, b)
 }
 
@@ -230,3 +231,55 @@ mod test {
     }
 }
 
+#[cfg(test)]
+mod bench {
+    extern crate test;
+
+    use test::Bencher;
+    use crate::square::named::*;
+    use super::*;
+
+    #[bench]
+    fn between_fill_connected_bench(bencher: &mut Bencher) {
+        let from = test::black_box(A4);
+        let to = test::black_box(H4);
+        bencher.iter(|| between_fill(from, to));
+    }
+
+    #[bench]
+    fn between_fill_disconnected_bench(bencher: &mut Bencher) {
+        let from = test::black_box(A4);
+        let to = test::black_box(B7);
+        bencher.iter(|| between_fill(from, to));
+    }
+
+    #[bench]
+    #[cfg(feature = "low_memory")]
+    fn line_bb_connected_bench(bencher: &mut Bencher) {
+        let from = test::black_box(A4);
+        let to = test::black_box(H4);
+        bencher.iter(|| line_bb(from, to));
+    }
+
+    #[bench]
+    #[cfg(feature = "low_memory")]
+    fn line_bb_disconnected_bench(bencher: &mut Bencher) {
+        let from = test::black_box(A4);
+        let to = test::black_box(B7);
+        bencher.iter(|| line_bb(from, to));
+    }
+
+    #[bench]
+    fn line_fill_connected_bench(bencher: &mut Bencher) {
+        let from = test::black_box(A4);
+        let to = test::black_box(H4);
+        bencher.iter(|| line_fill(from, to));
+    }
+
+    #[bench]
+    fn line_fill_disconnected_bench(bencher: &mut Bencher) {
+        let from = test::black_box(A4);
+        let to = test::black_box(B7);
+        bencher.iter(|| line_fill(from, to));
+    }
+}
