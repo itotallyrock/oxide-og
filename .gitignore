@@ -2,3 +2,6 @@
 .idea
 target
 *.log
+*.zip
+callgrind.out.*
+callgrind
