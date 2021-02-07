@@ -1,7 +1,7 @@
 
 // Local imports
 use crate::chess_move::ChessMove;
-use crate::eval::ScoreType;
+use crate::types::ScoreType;
 use crate::board::Board;
 use std::sync::RwLock;
 use crate::search::SearchError;
